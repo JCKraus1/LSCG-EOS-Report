@@ -84,26 +84,31 @@ export const EmailModal: React.FC<EmailModalProps> = ({
 
   const isFiber = data.activityType === 'fiber';
   const activityHeader = isFiber ? '═══ FIBER ACTIVITY ═══' : '═══ CONSTRUCTION ACTIVITY ═══';
-  const footageSection = isFiber ? '' : `Total Drill Footage: ${data.totalFootage || '0'} FT\n`;
-  const addressSection = `Start Address: ${data.startAddress || '—'}\nEnd Address: ${data.endAddress || '—'}\n`;
+
+  const footageSection = isFiber ? '' : `Total Drill Footage: ${data.totalFootage || '0'} FT\n\n`;
+  
+  const addressSection = `Start Address: ${data.startAddress || '—'}\nEnd Address: ${data.endAddress || '—'}\n\n`;
 
   const body = `Please see the attached EOS/Redline Report for project # ${
     data.project || 'N/A'
   } by contractor ${data.contractor || 'N/A'}.
 
 ${activityHeader}
+
 ${addressSection}${footageSection}${actLines || '• No specific activity rows logged.'}
 
 ═══ MOT ACTIVITY ═══
+
 ${motLines || '• No MOT items logged.'}${attachmentReminder}
 
 ═══ DEVIATIONS / NOTES ═══
+
 Revisions: ${data.revisions || 'None'}
 Issues/Damages: ${data.issues || 'None'}
 Next Day Plan: ${data.nextDay || 'None'}
 
-Submitted by: ${data.submittedBy || 'N/A'}
-Supervisor: ${data.supervisor || 'N/A'}`;
+Submitted by: ${data.submittedBy || 'N/A'}`;
+
 
   const handleCopy = (text: string, setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     navigator.clipboard.writeText(text);

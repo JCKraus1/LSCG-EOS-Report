@@ -65,7 +65,15 @@ function drawLscgLogo(ctx: CanvasRenderingContext2D) {
 }
 
 async function tryFetchUploadedLogoBlob(): Promise<Blob | null> {
-  const paths = ['/logo.png', 'logo.png', '/assets/logo.png', '/public/logo.png'];
+  const baseUrl = (import.meta as any).env?.BASE_URL || '/';
+  const resolvedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+  const paths = [
+    resolvedBase + 'logo.png',
+    '/logo.png',
+    'logo.png',
+    '/assets/logo.png',
+    '/public/logo.png'
+  ];
   for (const p of paths) {
     try {
       const res = await fetch(p);

@@ -581,7 +581,7 @@ export async function getStandaloneHtml(): Promise<string> {
 
     async function buildDocx(d) {
       const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-              ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType } = docx;
+              ImageRun, AlignmentType, WidthType, BorderStyle, ShadingType, Header, PageBreak } = docx;
 
       const logoBuffer = base64ToArrayBuffer("${base64Logo}");
       const filename = getFilename();
@@ -662,14 +662,94 @@ export async function getStandaloneHtml(): Promise<string> {
       const doc = new Document({
         sections: [{
           properties: {
-            page: { size: { width: 12240, height: 15840 }, margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } }
+            page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1080, bottom: 1080, left: 1080 } }
+          },
+          headers: {
+            default: new Header({
+              children: [
+                new Table({
+                  width: { size: 9080, type: WidthType.DXA },
+                  columnWidths: [3000, 6080],
+                  borders: {
+                    top: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                    bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                    left: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                    right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                    insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                    insideVertical: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                  },
+                  rows: [
+                    new TableRow({
+                      children: [
+                        new TableCell({
+                          width: { size: 3000, type: WidthType.DXA },
+                          borders: {
+                            top: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                            bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                            left: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                            right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                          },
+                          children: [
+                            new Paragraph({
+                              spacing: { before: 0, after: 0 },
+                              children: [
+                                new ImageRun({
+                                  data: logoBuffer,
+                                  transformation: { width: 180, height: 65 },
+                                  type: 'png'
+                                })
+                              ]
+                            })
+                          ]
+                        }),
+                        new TableCell({
+                          width: { size: 6080, type: WidthType.DXA },
+                          borders: {
+                            top: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                            bottom: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                            left: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                            right: { style: BorderStyle.NONE, size: 0, color: 'auto' },
+                          },
+                          children: [
+                            new Paragraph({
+                              alignment: AlignmentType.RIGHT,
+                              spacing: { before: 0, after: 0 },
+                              children: [
+                                new TextRun({
+                                  text: d.activityType === 'fiber' ? 'Fiber End of Day Shift Report' : 'End of Day Shift Report',
+                                  bold: true,
+                                  size: 24,
+                                  color: NAVY
+                                })
+                              ]
+                            }),
+                            new Paragraph({
+                              alignment: AlignmentType.RIGHT,
+                              spacing: { before: 40, after: 0 },
+                              children: [
+                                new TextRun({
+                                  text: 'LSCG / Full Circle Fiber  —  Tillman Fiber',
+                                  bold: true,
+                                  size: 14,
+                                  color: GRAY
+                                })
+                              ]
+                            })
+                          ]
+                        })
+                      ]
+                    })
+                  ]
+                }),
+                new Paragraph({
+                  spacing: { before: 80, after: 0 },
+                  border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '29a9e1', space: 4 } },
+                  children: []
+                })
+              ]
+            })
           },
           children: [
-            new Paragraph({ spacing: { before: 0, after: 100 }, children: [new ImageRun({ data: logoBuffer, transformation: { width: 180, height: 65 }, type: 'png' })] }),
-            new Paragraph({ spacing: { before: 0, after: 0 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '29a9e1', space: 4 } }, children: [] }),
-            new Paragraph({ spacing: { before: 120, after: 60 }, children: [new TextRun({ text: d.activityType === 'fiber' ? 'Fiber End of Day Shift Report' : 'End of Day Shift Report', bold: true, size: 36, color: NAVY })] }),
-            new Paragraph({ spacing: { before: 0, after: 200 }, children: [new TextRun({ text: 'LSCG / Full Circle Fiber  —  Tillman Fiber', size: 20, color: GRAY })] }),
-
             sectionHeader('General Information'), sp(80),
             new Table({
               width: { size: 9080, type: WidthType.DXA }, columnWidths: [2000, 2360, 2360, 2360],
@@ -705,6 +785,7 @@ export async function getStandaloneHtml(): Promise<string> {
             new Table({ width: { size: 8960, type: WidthType.DXA }, columnWidths: [5000, 2000, 1960], rows: motTableRows }),
             sp(200),
 
+            new Paragraph({ children: [new PageBreak()] }),
             sectionHeader('Notes & Deviations'), sp(80),
             new Table({
               width: { size: 9080, type: WidthType.DXA }, columnWidths: [9080],
