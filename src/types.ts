@@ -1,8 +1,6 @@
 export interface ActivityRow {
   id: string;
   description: string;
-  start: string;
-  end: string;
   material: string;
   quantity: string;
 }
@@ -21,6 +19,9 @@ export interface ShiftReportData {
   submittedBy: string;
   vendor: string;
   totalFootage: string;
+  startAddress?: string;
+  endAddress?: string;
+  activityType?: 'construction' | 'fiber';
   activities: ActivityRow[];
   motItems: MotRow[];
   revisions: string;
@@ -40,5 +41,20 @@ export const MATERIAL_TYPES = [
   'Toby Boxes',
   'DAP PITs',
   'Micro Splices',
+  'FDH',
+  'Ground Rod',
+  'Vault',
+  'MacLean Switch',
   'Other'
 ] as const;
+
+export const CONSTRUCTION_MATERIAL_TYPES = MATERIAL_TYPES;
+
+export const FIBER_MATERIAL_TYPES = [
+  '48ct Fiber',
+  '96ct Fiber',
+  '144ct Fiber',
+  'Tracer Wire',
+  'Stingray'
+] as const;
+

@@ -123,11 +123,9 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
     new TableRow({
       tableHeader: true,
       children: [
-        hc('Activity Description', 3000),
-        hc('Start Address', 1600),
-        hc('End Address', 1600),
-        hc('Material / Type', 2000),
-        hc('Qty', 760)
+        hc('Activity Description', 5500),
+        hc('Material / Type', 2500),
+        hc('Qty', 1080)
       ]
     }),
     ...(actRows.length
@@ -135,11 +133,9 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
           (a) =>
             new TableRow({
               children: [
-                dc(a.description, 3000),
-                dc(a.start, 1600),
-                dc(a.end, 1600),
-                dc(a.material, 2000),
-                dc(a.quantity || '0', 760, { center: true })
+                dc(a.description, 5500),
+                dc(a.material, 2500),
+                dc(a.quantity || '0', 1080, { center: true })
               ]
             })
         )
@@ -149,7 +145,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
               new TableCell({
                 borders: bdrs,
                 width: { size: 9080, type: WidthType.DXA },
-                columnSpan: 5,
+                columnSpan: 3,
                 margins: CM,
                 children: [
                   new Paragraph({
@@ -276,16 +272,28 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
           sp(200),
 
           // ── Construction Activity ──
-          sectionHeader('Construction Activity'),
+          sectionHeader(d.activityType === 'fiber' ? 'Fiber EOS' : 'Construction EOS'),
           sp(80),
           new Table({
             width: { size: 9080, type: WidthType.DXA },
-            columnWidths: [7080, 2000],
+            columnWidths: [3000, 6080],
             rows: [
               new TableRow({
                 children: [
-                  tc('Total Drill Footage (manual entry)', 7080),
-                  tc(`${d.totalFootage || '0'} FT`, 2000, { center: true })
+                  tc('Total Drill Footage', 3000),
+                  dc(`${d.totalFootage || '0'} FT`, 6080)
+                ]
+              }),
+              new TableRow({
+                children: [
+                  tc('Start Address', 3000),
+                  dc(d.startAddress || '—', 6080)
+                ]
+              }),
+              new TableRow({
+                children: [
+                  tc('End Address', 3000),
+                  dc(d.endAddress || '—', 6080)
                 ]
               })
             ]
@@ -293,7 +301,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
           sp(100),
           new Table({
             width: { size: 9080, type: WidthType.DXA },
-            columnWidths: [3000, 1600, 1600, 2000, 760],
+            columnWidths: [5500, 2500, 1080],
             rows: actTableRows
           }),
           sp(200),

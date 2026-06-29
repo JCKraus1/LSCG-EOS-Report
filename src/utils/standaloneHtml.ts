@@ -75,9 +75,37 @@ export async function getStandaloneHtml(): Promise<string> {
       padding: 12px 20px;
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
       gap: 10px;
     }
     .card-header svg { flex-shrink: 0; }
+    .activity-type-toggle {
+      display: flex;
+      background: rgba(0,0,0,0.15);
+      padding: 3px;
+      border-radius: var(--radius);
+      gap: 4px;
+    }
+    .toggle-btn {
+      padding: 4px 10px;
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      border: none;
+      border-radius: calc(var(--radius) - 2px);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toggle-btn:hover {
+      color: white;
+    }
+    .toggle-btn.active {
+      background: white;
+      color: var(--blue-header);
+    }
     .card-header-text { color: white; }
     .card-header-text strong { font-size: 13px; font-weight: 600; display: block; }
     .card-header-text span { font-size: 11px; opacity: 0.8; }
@@ -122,12 +150,12 @@ export async function getStandaloneHtml(): Promise<string> {
       color: var(--blue-dark);
     }
     .table-header { display: grid; gap: 8px; padding: 0 0 6px; border-bottom: 1px solid var(--gray-200); margin-bottom: 8px; }
-    .act-header { grid-template-columns: 2fr 1.1fr 1.1fr 1.5fr 80px 32px; }
+    .act-header { grid-template-columns: 3fr 2fr 90px 32px; }
     .mot-header { grid-template-columns: 2fr 1fr 80px 32px; }
     .table-header span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-500); }
     .act-row {
       display: grid;
-      grid-template-columns: 2fr 1.1fr 1.1fr 1.5fr 80px 32px;
+      grid-template-columns: 3fr 2fr 90px 32px;
       gap: 8px;
       align-items: start;
       margin-bottom: 8px;
@@ -309,8 +337,14 @@ export async function getStandaloneHtml(): Promise<string> {
   <!-- Construction Activity -->
   <div class="form-card">
     <div class="card-header">
-      <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <div class="card-header-text"><strong>Construction activity</strong><span>Work completed this shift</span></div>
+      <div style="display:flex; align-items:center; gap:10px">
+        <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <div class="card-header-text"><strong id="card-2-title">Construction EOS</strong><span>Work completed this shift</span></div>
+      </div>
+      <div class="activity-type-toggle">
+        <button type="button" class="toggle-btn active" id="btn-construction" onclick="setActivityType('construction')">Construction EOS</button>
+        <button type="button" class="toggle-btn" id="btn-fiber" onclick="setActivityType('fiber')">Fiber EOS</button>
+      </div>
     </div>
     <div class="card-body">
       <div class="total-footage-bar" style="margin-bottom:14px">
@@ -318,10 +352,12 @@ export async function getStandaloneHtml(): Promise<string> {
         <input type="number" min="0" id="f-total-footage" placeholder="0">
         <span>FT</span>
       </div>
+      <div class="field-grid grid-2" style="margin-bottom:14px">
+        <div class="field"><label>Start Address</label><input type="text" id="f-start-address" placeholder="Enter start address"></div>
+        <div class="field"><label>End Address</label><input type="text" id="f-end-address" placeholder="Enter end address"></div>
+      </div>
       <div class="table-header act-header">
         <span>Activity description</span>
-        <span>Start address</span>
-        <span>End address</span>
         <span>Material / type</span>
         <span>Qty</span>
         <span></span>
@@ -391,7 +427,7 @@ export async function getStandaloneHtml(): Promise<string> {
   <div class="toast" id="toast"></div>
 
   <script>
-    const MATERIAL_TYPES = [
+    const CONSTRUCTION_MATERIAL_TYPES = [
       '1.5" Conduit Bore',
       '24 Way HEX Bore',
       '12 Way HEX Bore',
@@ -400,20 +436,56 @@ export async function getStandaloneHtml(): Promise<string> {
       'Toby Boxes',
       'DAP PITs',
       'Micro Splices',
+      'FDH',
+      'Ground Rod',
+      'Vault',
+      'MacLean Switch',
       'Other'
     ];
 
-    function addActivityRow(activity='', start='', end='', mat='', qty='') {
+    const FIBER_MATERIAL_TYPES = [
+      '48ct Fiber',
+      '96ct Fiber',
+      '144ct Fiber',
+      'Tracer Wire',
+      '144ct Fiber Tracer Wire',
+      'Stingray'
+    ];
+
+    let currentActivityType = 'construction';
+
+    function setActivityType(type) {
+      if (currentActivityType === type) return;
+      currentActivityType = type;
+      
+      document.getElementById('btn-construction').classList.toggle('active', type === 'construction');
+      document.getElementById('btn-fiber').classList.toggle('active', type === 'fiber');
+      document.getElementById('card-2-title').textContent = type === 'fiber' ? 'Fiber EOS' : 'Construction EOS';
+      
+      const rows = document.querySelectorAll('.act-row');
+      const list = type === 'fiber' ? FIBER_MATERIAL_TYPES : CONSTRUCTION_MATERIAL_TYPES;
+      
+      rows.forEach(row => {
+        const sel = row.querySelector('select');
+        const currentVal = sel ? sel.value : '';
+        let opts = '<option value="">Select type...</option>';
+        list.forEach(m => {
+          opts += '<option value="' + m + '"' + (m === currentVal ? ' selected' : '') + '>' + m + '</option>';
+        });
+        if (sel) sel.innerHTML = opts;
+      });
+    }
+
+    function addActivityRow(activity='', mat='', qty='') {
       const container = document.getElementById('activity-rows');
       const row = document.createElement('div');
       row.className = 'act-row';
-      const opts = MATERIAL_TYPES.map(m =>
+      const list = currentActivityType === 'fiber' ? FIBER_MATERIAL_TYPES : CONSTRUCTION_MATERIAL_TYPES;
+      const opts = list.map(m =>
         '<option value="' + m + '"' + (m === mat ? ' selected' : '') + '>' + m + '</option>'
       ).join('');
       row.innerHTML = ''
         + '<input type="text" placeholder="Describe work activity" value="' + activity + '">'
-        + '<input type="text" placeholder="Start address" value="' + start + '">'
-        + '<input type="text" placeholder="End address" value="' + end + '">'
         + '<select><option value="">Select type...</option>' + opts + '</select>'
         + '<div class="qty-wrap">'
         +   '<input type="number" min="0" placeholder="0" value="' + qty + '">'
@@ -456,10 +528,8 @@ export async function getStandaloneHtml(): Promise<string> {
         const sel = row.querySelector('select');
         activities.push({
           description: inputs[0].value,
-          start: inputs[1].value,
-          end: inputs[2].value,
-          material: sel.value,
-          quantity: inputs[3].value
+          material: sel ? sel.value : '',
+          quantity: inputs[1] ? inputs[1].value : ''
         });
       });
       const motItems = [];
@@ -474,6 +544,9 @@ export async function getStandaloneHtml(): Promise<string> {
         contractor: document.getElementById('f-contractor').value,
         vendor: 'LSCG / Full Circle Fiber',
         totalFootage: document.getElementById('f-total-footage').value,
+        startAddress: document.getElementById('f-start-address').value,
+        endAddress: document.getElementById('f-end-address').value,
+        activityType: currentActivityType,
         activities: activities,
         motItems: motItems,
         revisions: document.getElementById('f-revisions').value,
@@ -557,11 +630,11 @@ export async function getStandaloneHtml(): Promise<string> {
       const actTableRows = [
         new TableRow({
           tableHeader: true,
-          children: [hc('Activity Description', 3000), hc('Start Address', 1600), hc('End Address', 1600), hc('Material / Type', 2000), hc('Qty', 760)]
+          children: [hc('Activity Description', 5500), hc('Material / Type', 2500), hc('Qty', 1080)]
         }),
         ...(actRows.length ? actRows.map(a => new TableRow({ children: [
-          dc(a.description, 3000), dc(a.start, 1600), dc(a.end, 1600), dc(a.material, 2000), dc(a.quantity || '0', 760, { center: true })
-        ]})) : [new TableRow({ children: [dc('No activities logged', 8960)] })])
+          dc(a.description, 5500), dc(a.material, 2500), dc(a.quantity || '0', 1080, { center: true })
+        ]})) : [new TableRow({ children: [dc('No activities logged', 9080)] })])
       ];
 
       const motRows = d.motItems.filter(m => m.activity || m.code);
@@ -602,13 +675,17 @@ export async function getStandaloneHtml(): Promise<string> {
             }),
             sp(200),
 
-            sectionHeader('Construction Activity'), sp(80),
+            sectionHeader(d.activityType === 'fiber' ? 'Fiber EOS' : 'Construction EOS'), sp(80),
             new Table({
-              width: { size: 9080, type: WidthType.DXA }, columnWidths: [7080, 2000],
-              rows: [new TableRow({ children: [tc('Total Drill Footage (manual entry)', 7080), tc((d.totalFootage || '0') + ' FT', 2000, { center: true })] })]
+              width: { size: 9080, type: WidthType.DXA }, columnWidths: [3000, 6080],
+              rows: [
+                new TableRow({ children: [tc('Total Drill Footage', 3000), dc((d.totalFootage || '0') + ' FT', 6080)] }),
+                new TableRow({ children: [tc('Start Address', 3000), dc(d.startAddress || '—', 6080)] }),
+                new TableRow({ children: [tc('End Address', 3000), dc(d.endAddress || '—', 6080)] })
+              ]
             }),
             sp(100),
-            new Table({ width: { size: 9080, type: WidthType.DXA }, columnWidths: [3000, 1600, 1600, 2000, 760], rows: actTableRows }),
+            new Table({ width: { size: 9080, type: WidthType.DXA }, columnWidths: [5500, 2500, 1080], rows: actTableRows }),
             sp(200),
 
             sectionHeader('MOT Activity'), sp(80),
@@ -684,22 +761,23 @@ export async function getStandaloneHtml(): Promise<string> {
     }
 
     function clearForm() {
-      ['f-date','f-project','f-submitter','f-contractor','f-total-footage','f-revisions','f-issues','f-nextday','f-sig','f-supervisor']
+      ['f-date','f-project','f-submitter','f-contractor','f-total-footage','f-start-address','f-end-address','f-revisions','f-issues','f-nextday','f-sig','f-supervisor']
         .forEach(function(id) { document.getElementById(id).value = ''; });
       document.getElementById('activity-rows').innerHTML = '';
       document.getElementById('mot-rows').innerHTML = '';
+      setActivityType('construction');
       addDefaultRows();
       showToast('Form cleared.');
     }
 
     function addDefaultRows() {
-      addActivityRow('','','','1.5" Conduit Bore','');
-      addActivityRow('','','','24 Way HEX Bore','');
-      addActivityRow('','','','12 Way HEX Bore','');
-      addActivityRow('','','','2 Way HEX Bore','');
-      addActivityRow('','','','Toby Boxes','');
-      addActivityRow('','','','DAP PITs','');
-      addActivityRow('','','','Micro Splices','');
+      addActivityRow('','1.5" Conduit Bore','');
+      addActivityRow('','24 Way HEX Bore','');
+      addActivityRow('','12 Way HEX Bore','');
+      addActivityRow('','2 Way HEX Bore','');
+      addActivityRow('','Toby Boxes','');
+      addActivityRow('','DAP PITs','');
+      addActivityRow('','Micro Splices','');
       addMOTRow(); addMOTRow(); addMOTRow();
     }
 

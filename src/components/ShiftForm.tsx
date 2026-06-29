@@ -12,7 +12,7 @@ import {
   Mail,
   Save
 } from 'lucide-react';
-import { ShiftReportData, ActivityRow, MotRow, MATERIAL_TYPES } from '../types';
+import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES } from '../types';
 import { generateDocxBlob } from '../utils/docxGenerator';
 import { getLogoBase64 } from '../utils/logo';
 import { saveDraftToStorage, loadDraftFromStorage, clearDraftFromStorage } from '../utils/indexedDb';
@@ -40,6 +40,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
   const [contractor, setContractor] = useState<string>('');
   const [submittedBy, setSubmittedBy] = useState<string>('');
   const [totalFootage, setTotalFootage] = useState<string>('');
+  const [startAddress, setStartAddress] = useState<string>('');
+  const [endAddress, setEndAddress] = useState<string>('');
+  const [activityType, setActivityType] = useState<'construction' | 'fiber'>('construction');
   const [revisions, setRevisions] = useState<string>('');
   const [issues, setIssues] = useState<string>('');
   const [nextDay, setNextDay] = useState<string>('');
@@ -67,8 +70,6 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
     const initialActivities: ActivityRow[] = defaultMats.map((mat, i) => ({
       id: `act-${Date.now()}-${i}`,
       description: '',
-      start: '',
-      end: '',
       material: mat,
       quantity: ''
     }));
@@ -112,6 +113,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
         setContractor(draft.contractor || '');
         setSubmittedBy(draft.submittedBy || '');
         setTotalFootage(draft.totalFootage || '');
+        setStartAddress(draft.startAddress || '');
+        setEndAddress(draft.endAddress || '');
+        setActivityType(draft.activityType || 'construction');
         setRevisions(draft.revisions || '');
         setIssues(draft.issues || '');
         setNextDay(draft.nextDay || '');
@@ -138,6 +142,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
         contractor,
         submittedBy,
         totalFootage,
+        startAddress,
+        endAddress,
+        activityType,
         revisions,
         issues,
         nextDay,
@@ -150,7 +157,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [date, project, contractor, submittedBy, totalFootage, revisions, issues, nextDay, signature, supervisor, activities, motItems]);
+  }, [date, project, contractor, submittedBy, totalFootage, startAddress, endAddress, activityType, revisions, issues, nextDay, signature, supervisor, activities, motItems]);
 
   const handleAddActivity = () => {
     setActivities((prev) => [
@@ -158,8 +165,6 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
       {
         id: `act-${Date.now()}`,
         description: '',
-        start: '',
-        end: '',
         material: '',
         quantity: ''
       }
@@ -211,6 +216,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
     setContractor('');
     setSubmittedBy('');
     setTotalFootage('');
+    setStartAddress('');
+    setEndAddress('');
+    setActivityType('construction');
     setRevisions('');
     setIssues('');
     setNextDay('');
@@ -228,6 +236,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
     submittedBy,
     vendor: 'LSCG / Full Circle Fiber',
     totalFootage,
+    startAddress,
+    endAddress,
+    activityType,
     activities,
     motItems,
     revisions,
@@ -420,37 +431,92 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
 
       {/* 2. Construction Activity */}
       <div className="max-w-[860px] mx-auto mb-4 bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden print:shadow-none print:border print:border-gray-300 print:mb-3">
-        <div className="bg-[#1e7aaa] px-5 py-3 flex items-center gap-2.5 text-white">
-          <CheckCircle className="w-4 h-4 flex-shrink-0" />
-          <div>
-            <strong className="text-[13px] font-semibold block leading-tight">Construction activity</strong>
-            <span className="text-[11px] opacity-80 block">Work completed this shift</span>
+        <div className="bg-[#1e7aaa] px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <div>
+              <strong className="text-[13px] font-semibold block leading-tight">
+                {activityType === 'fiber' ? 'Fiber EOS' : 'Construction EOS'}
+              </strong>
+              <span className="text-[11px] opacity-80 block">Work completed this shift</span>
+            </div>
+          </div>
+          <div className="flex bg-black/15 p-0.5 rounded-lg self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setActivityType('construction')}
+              className={`px-3 py-1 text-[11px] font-bold rounded transition ${
+                activityType === 'construction'
+                  ? 'bg-white text-[#1e7aaa] shadow-sm'
+                  : 'text-white/80 hover:text-white'
+              }`}
+            >
+              Construction EOS
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivityType('fiber')}
+              className={`px-3 py-1 text-[11px] font-bold rounded transition ${
+                activityType === 'fiber'
+                  ? 'bg-white text-[#1e7aaa] shadow-sm'
+                  : 'text-white/80 hover:text-white'
+              }`}
+            >
+              Fiber EOS
+            </button>
           </div>
         </div>
         <div className="p-5">
-          {/* Total Drill Footage Highlight Bar */}
-          <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#1a6b8a]">
-              Total drill footage (manual entry):
-            </label>
-            <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={totalFootage}
-                onChange={(e) => setTotalFootage(e.target.value)}
-                className="w-24 px-2 py-1.5 border border-[#b3dff0] rounded-lg text-sm font-bold text-[#1a6b8a] bg-white text-center focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 shadow-inner"
-              />
-              <span className="text-sm font-bold text-[#1a6b8a]">FT</span>
+          {/* Total Drill Footage Highlight Bar & Global Addresses */}
+          <div className="flex flex-col gap-3 mb-4 bg-gray-50/50 border border-gray-200 rounded-xl p-4">
+            <div className="flex flex-wrap items-center gap-3 p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#1a6b8a]">
+                Total drill footage (manual entry):
+              </label>
+              <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={totalFootage}
+                  onChange={(e) => setTotalFootage(e.target.value)}
+                  className="w-24 px-2 py-1.5 border border-[#b3dff0] rounded-lg text-sm font-bold text-[#1a6b8a] bg-white text-center focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 shadow-inner"
+                />
+                <span className="text-sm font-bold text-[#1a6b8a]">FT</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#6c757d]">
+                  Start Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter start address"
+                  value={startAddress}
+                  onChange={(e) => setStartAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#dee2e6] rounded-lg text-xs sm:text-[13px] focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#6c757d]">
+                  End Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter end address"
+                  value={endAddress}
+                  onChange={(e) => setEndAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#dee2e6] rounded-lg text-xs sm:text-[13px] focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 bg-white"
+                />
+              </div>
             </div>
           </div>
 
           {/* Desktop Headers */}
-          <div className="hidden sm:grid grid-cols-[2fr_1.1fr_1.1fr_1.5fr_80px_32px] gap-2 pb-1.5 border-b border-[#e9ecef] mb-2 text-[10px] font-bold uppercase tracking-wider text-[#adb5bd]">
+          <div className="hidden sm:grid grid-cols-[3fr_2fr_90px_32px] gap-2 pb-1.5 border-b border-[#e9ecef] mb-2 text-[10px] font-bold uppercase tracking-wider text-[#adb5bd]">
             <span>Activity description</span>
-            <span>Start address</span>
-            <span>End address</span>
             <span>Material / type</span>
             <span>Qty</span>
             <span></span>
@@ -461,7 +527,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
             {activities.map((row, index) => (
               <div
                 key={row.id}
-                className="grid grid-cols-1 sm:grid-cols-[2fr_1.1fr_1.1fr_1.5fr_80px_32px] gap-2.5 sm:gap-2 items-start bg-slate-50/80 sm:bg-gray-50/50 p-3.5 sm:p-0 rounded-2xl sm:rounded-lg border border-slate-200 sm:border-0 shadow-sm sm:shadow-none relative"
+                className="grid grid-cols-1 sm:grid-cols-[3fr_2fr_90px_32px] gap-2.5 sm:gap-2 items-start bg-slate-50/80 sm:bg-gray-50/50 p-3.5 sm:p-0 rounded-2xl sm:rounded-lg border border-slate-200 sm:border-0 shadow-sm sm:shadow-none relative"
               >
                 <div className="flex items-center justify-between sm:hidden pb-1 border-b border-slate-200">
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1e7aaa]">
@@ -487,29 +553,6 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-2.5 sm:contents">
-                  <div>
-                    <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1">Start Address</span>
-                    <input
-                      type="text"
-                      placeholder="Start address"
-                      value={row.start}
-                      onChange={(e) => handleUpdateActivity(row.id, 'start', e.target.value)}
-                      className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20"
-                    />
-                  </div>
-                  <div>
-                    <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1">End Address</span>
-                    <input
-                      type="text"
-                      placeholder="End address"
-                      value={row.end}
-                      onChange={(e) => handleUpdateActivity(row.id, 'end', e.target.value)}
-                      className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20"
-                    />
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-[1fr_90px] gap-2 sm:contents pt-1 sm:pt-0">
                   <div>
                     <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1">Material / Type</span>
@@ -519,7 +562,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
                       className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 text-gray-800"
                     >
                       <option value="">Select type...</option>
-                      {MATERIAL_TYPES.map((m) => (
+                      {(activityType === 'fiber' ? FIBER_MATERIAL_TYPES : CONSTRUCTION_MATERIAL_TYPES).map((m) => (
                         <option key={m} value={m}>
                           {m}
                         </option>
