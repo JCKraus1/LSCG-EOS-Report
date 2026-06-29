@@ -469,22 +469,24 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
         <div className="p-5">
           {/* Total Drill Footage Highlight Bar & Global Addresses */}
           <div className="flex flex-col gap-3 mb-4 bg-gray-50/50 border border-gray-200 rounded-xl p-4">
-            <div className="flex flex-wrap items-center gap-3 p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#1a6b8a]">
-                Total drill footage (manual entry):
-              </label>
-              <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={totalFootage}
-                  onChange={(e) => setTotalFootage(e.target.value)}
-                  className="w-24 px-2 py-1.5 border border-[#b3dff0] rounded-lg text-sm font-bold text-[#1a6b8a] bg-white text-center focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 shadow-inner"
-                />
-                <span className="text-sm font-bold text-[#1a6b8a]">FT</span>
+            {activityType !== 'fiber' && (
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#1a6b8a]">
+                  Total drill footage (manual entry):
+                </label>
+                <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={totalFootage}
+                    onChange={(e) => setTotalFootage(e.target.value)}
+                    className="w-24 px-2 py-1.5 border border-[#b3dff0] rounded-lg text-sm font-bold text-[#1a6b8a] bg-white text-center focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 shadow-inner"
+                  />
+                  <span className="text-sm font-bold text-[#1a6b8a]">FT</span>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="flex flex-col gap-1">

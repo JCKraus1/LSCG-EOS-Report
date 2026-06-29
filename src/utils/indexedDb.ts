@@ -63,6 +63,14 @@ export async function loadDraftFromStorage(): Promise<any | null> {
 }
 
 export async function clearDraftFromStorage(): Promise<void> {
+  // Always clear localStorage fallback
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch (e) {
+    console.warn('Failed to clear draft from local storage', e);
+  }
+
+  // Clear IndexedDB if supported
   try {
     const db = await getDB();
     return new Promise((resolve, reject) => {
@@ -73,10 +81,7 @@ export async function clearDraftFromStorage(): Promise<void> {
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
-    try {
-      localStorage.removeItem(DRAFT_KEY);
-    } catch (e) {
-      console.warn('Failed to clear draft from local storage', e);
-    }
+    // Already cleared localStorage, so we can ignore/warn about IndexedDB error
+    console.warn('IndexedDB clear error, fallback used', err);
   }
 }

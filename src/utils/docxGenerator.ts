@@ -96,7 +96,8 @@ export function getFilename(d: ShiftReportData): string {
     const now = new Date();
     dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
   }
-  const parts = [dateStr, 'End Of Day Shift Report'];
+  const reportName = d.activityType === 'fiber' ? 'Fiber End Of Day Shift Report' : 'End Of Day Shift Report';
+  const parts = [dateStr, reportName];
   if (project) parts.push(project);
   parts.push(contractor);
   return parts.join(' ') + '.docx';
@@ -225,7 +226,14 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
           // Title
           new Paragraph({
             spacing: { before: 120, after: 60 },
-            children: [new TextRun({ text: 'End of Day Shift Report', bold: true, size: 36, color: NAVY })]
+            children: [
+              new TextRun({
+                text: d.activityType === 'fiber' ? 'Fiber End of Day Shift Report' : 'End of Day Shift Report',
+                bold: true,
+                size: 36,
+                color: NAVY
+              })
+            ]
           }),
           new Paragraph({
             spacing: { before: 0, after: 200 },
@@ -278,12 +286,16 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
             width: { size: 9080, type: WidthType.DXA },
             columnWidths: [3000, 6080],
             rows: [
-              new TableRow({
-                children: [
-                  tc('Total Drill Footage', 3000),
-                  dc(`${d.totalFootage || '0'} FT`, 6080)
-                ]
-              }),
+              ...(d.activityType !== 'fiber'
+                ? [
+                    new TableRow({
+                      children: [
+                        tc('Total Drill Footage', 3000),
+                        dc(`${d.totalFootage || '0'} FT`, 6080)
+                      ]
+                    })
+                  ]
+                : []),
               new TableRow({
                 children: [
                   tc('Start Address', 3000),

@@ -82,13 +82,17 @@ export const EmailModal: React.FC<EmailModalProps> = ({
 
   const attachmentReminder = `\n\n⚠️ ATTACHMENT REMINDER:\nPlease attach the downloaded Word Report (.docx), Redline PDFs, and Site Photos to this email.`;
 
+  const isFiber = data.activityType === 'fiber';
+  const activityHeader = isFiber ? '═══ FIBER ACTIVITY ═══' : '═══ CONSTRUCTION ACTIVITY ═══';
+  const footageSection = isFiber ? '' : `Total Drill Footage: ${data.totalFootage || '0'} FT\n`;
+  const addressSection = `Start Address: ${data.startAddress || '—'}\nEnd Address: ${data.endAddress || '—'}\n`;
+
   const body = `Please see the attached EOS/Redline Report for project # ${
     data.project || 'N/A'
   } by contractor ${data.contractor || 'N/A'}.
 
-═══ CONSTRUCTION ACTIVITY ═══
-Total Drill Footage: ${data.totalFootage || '0'} FT
-${actLines || '• No specific activity rows logged.'}
+${activityHeader}
+${addressSection}${footageSection}${actLines || '• No specific activity rows logged.'}
 
 ═══ MOT ACTIVITY ═══
 ${motLines || '• No MOT items logged.'}${attachmentReminder}

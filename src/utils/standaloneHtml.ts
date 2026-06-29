@@ -309,7 +309,7 @@ export async function getStandaloneHtml(): Promise<string> {
   <div class="page-header">
     <img src="${base64Logo}" class="logo-img" alt="LSCG Logo">
     <div class="header-right">
-      <div class="report-title">End of Day Shift Report</div>
+      <div class="report-title" id="report-title">End of Day Shift Report</div>
       <div class="report-sub">Tillman Fiber</div>
       <div class="date-badge" id="live-date"></div>
     </div>
@@ -347,7 +347,7 @@ export async function getStandaloneHtml(): Promise<string> {
       </div>
     </div>
     <div class="card-body">
-      <div class="total-footage-bar" style="margin-bottom:14px">
+      <div class="total-footage-bar" id="footage-bar" style="margin-bottom:14px">
         <label>Total drill footage (manual entry):</label>
         <input type="number" min="0" id="f-total-footage" placeholder="0">
         <span>FT</span>
@@ -462,6 +462,16 @@ export async function getStandaloneHtml(): Promise<string> {
       document.getElementById('btn-fiber').classList.toggle('active', type === 'fiber');
       document.getElementById('card-2-title').textContent = type === 'fiber' ? 'Fiber EOS' : 'Construction EOS';
       
+      const reportTitle = document.getElementById('report-title');
+      if (reportTitle) {
+        reportTitle.textContent = type === 'fiber' ? 'Fiber End of Day Shift Report' : 'End of Day Shift Report';
+      }
+      
+      const footageBar = document.getElementById('footage-bar');
+      if (footageBar) {
+        footageBar.style.display = type === 'fiber' ? 'none' : 'flex';
+      }
+      
       const rows = document.querySelectorAll('.act-row');
       const list = type === 'fiber' ? FIBER_MATERIAL_TYPES : CONSTRUCTION_MATERIAL_TYPES;
       
@@ -515,7 +525,8 @@ export async function getStandaloneHtml(): Promise<string> {
         const partsD = dateVal.split('-');
         dateStr = parseInt(partsD[1]) + '-' + parseInt(partsD[2]) + '-' + partsD[0];
       }
-      const parts = [dateStr, 'End Of Day Shift Report'];
+      const reportName = currentActivityType === 'fiber' ? 'Fiber End Of Day Shift Report' : 'End Of Day Shift Report';
+      const parts = [dateStr, reportName];
       if (project) parts.push(project);
       parts.push(contractor);
       return parts.join(' ') + '.docx';
@@ -656,7 +667,7 @@ export async function getStandaloneHtml(): Promise<string> {
           children: [
             new Paragraph({ spacing: { before: 0, after: 100 }, children: [new ImageRun({ data: logoBuffer, transformation: { width: 180, height: 65 }, type: 'png' })] }),
             new Paragraph({ spacing: { before: 0, after: 0 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '29a9e1', space: 4 } }, children: [] }),
-            new Paragraph({ spacing: { before: 120, after: 60 }, children: [new TextRun({ text: 'End of Day Shift Report', bold: true, size: 36, color: NAVY })] }),
+            new Paragraph({ spacing: { before: 120, after: 60 }, children: [new TextRun({ text: d.activityType === 'fiber' ? 'Fiber End of Day Shift Report' : 'End of Day Shift Report', bold: true, size: 36, color: NAVY })] }),
             new Paragraph({ spacing: { before: 0, after: 200 }, children: [new TextRun({ text: 'LSCG / Full Circle Fiber  —  Tillman Fiber', size: 20, color: GRAY })] }),
 
             sectionHeader('General Information'), sp(80),
@@ -679,7 +690,9 @@ export async function getStandaloneHtml(): Promise<string> {
             new Table({
               width: { size: 9080, type: WidthType.DXA }, columnWidths: [3000, 6080],
               rows: [
-                new TableRow({ children: [tc('Total Drill Footage', 3000), dc((d.totalFootage || '0') + ' FT', 6080)] }),
+                ...(d.activityType !== 'fiber' ? [
+                  new TableRow({ children: [tc('Total Drill Footage', 3000), dc((d.totalFootage || '0') + ' FT', 6080)] })
+                ] : []),
                 new TableRow({ children: [tc('Start Address', 3000), dc(d.startAddress || '—', 6080)] }),
                 new TableRow({ children: [tc('End Address', 3000), dc(d.endAddress || '—', 6080)] })
               ]
