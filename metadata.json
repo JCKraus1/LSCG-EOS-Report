@@ -1,0 +1,6 @@
+{
+  "name": "End of Day Shift Report",
+  "description": "End of Day Shift Report web form and DOCX generator for LSCG / Full Circle Fiber.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
