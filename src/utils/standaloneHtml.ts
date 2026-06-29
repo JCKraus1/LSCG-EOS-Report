@@ -52,7 +52,7 @@ export async function getStandaloneHtml(): Promise<string> {
       padding: 16px 24px;
       box-shadow: var(--shadow);
     }
-    .logo-img { height: 52px; width: auto; display: block; }
+    .logo-img { height: 104px; width: auto; display: block; }
     .header-right { text-align: right; }
     .header-right .report-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
     .header-right .report-sub { font-size: 12px; color: var(--gray-600); margin-top: 2px; }

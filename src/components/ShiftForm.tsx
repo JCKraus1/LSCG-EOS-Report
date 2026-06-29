@@ -312,9 +312,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
       {/* Page Header Card */}
       <div className="max-w-[860px] mx-auto mb-4 sm:mb-5 bg-white rounded-2xl sm:rounded-xl p-4 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-gray-100 print:shadow-none print:border print:border-gray-300 print:mb-3">
         {logoSrc ? (
-          <img src={logoSrc} className="h-12 sm:h-14 w-auto block object-contain" alt="LSCG Logo" />
+          <img src={logoSrc} className="h-24 sm:h-28 w-auto block object-contain" alt="LSCG Logo" />
         ) : (
-          <div className="h-12 sm:h-14 w-44 sm:w-48 bg-gray-100 animate-pulse rounded flex items-center justify-center font-bold text-[#1e3a5f]">
+          <div className="h-24 sm:h-28 w-88 sm:w-96 bg-gray-100 animate-pulse rounded flex items-center justify-center font-bold text-[#1e3a5f]">
             LSCG LOGO
           </div>
         )}
