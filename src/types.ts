@@ -45,6 +45,7 @@ export const MATERIAL_TYPES = [
   'Ground Rod',
   'Vault',
   'MacLean Switch',
+  'Swing Arm',
   'Other'
 ] as const;
 
@@ -55,6 +56,39 @@ export const FIBER_MATERIAL_TYPES = [
   '96ct Fiber',
   '144ct Fiber',
   'Tracer Wire',
-  'Stingray'
+  'Stingray',
+  'Strand',
+  'Other'
 ] as const;
+
+export const ACTIVITY_DESCRIPTIONS = [
+  'Aerial',
+  'Directional Bore',
+  'Hand Trench',
+  'Underground'
+] as const;
+
+export const MOT_ACTIVITIES = [
+  'MOT Flagger (TCHR12 - 13)',
+  'MOT Traffic Cones ( 10 per - TCHR68-72)',
+  'MOT Work Zone Signage (TCHR65-67)',
+  'MOT Vehicle (TCHR76-78)'
+] as const;
+
+export const MOT_CODES = [
+  'TCHR12 - HR - Flagger - Normal Rate',
+  'TCHR13 - HR - Flagger - Overtime Rate',
+  'TCHR68 - HR - traffic cones - Normal Rate',
+  'TCHR69 - HR - traffic cones - Over time Rate',
+  'TCHR70 - Daily - traffic cones - Normal Rate',
+  'TCHR71 - Daily - traffic cones - Over time Rate',
+  'TCHR72 - Weekly – traffic cones - Normal Rate',
+  'TCHR65 - HR - work zone sign - Normal Rate',
+  'TCHR66 - Daily - work zone sign - Normal Rate',
+  'TCHR67 - Weekly – work zone sign - Normal Rate',
+  'TCHR76 - HR Vehicle rate - large vehicle - Normal Rate',
+  'TCHR77 - HR Vehicle Rate - medium vehicle - Normal Rate',
+  'TCHR78 - HR Vehicle Rate - small vehicle - Normal Rate'
+] as const;
+
 

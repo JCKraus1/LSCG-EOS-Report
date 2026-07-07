@@ -143,7 +143,7 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
               <Mail className="w-6 h-6 text-[#29a9e1]" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Email Report Dispatcher</h2>
+              <h2 className="text-lg font-bold">Submit Report</h2>
               <p className="text-xs text-cyan-200">
                 Persistent recipients & automated LSCG template
               </p>

@@ -12,7 +12,7 @@ import {
   Mail,
   Save
 } from 'lucide-react';
-import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES } from '../types';
+import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES, ACTIVITY_DESCRIPTIONS, MOT_ACTIVITIES, MOT_CODES } from '../types';
 import { generateDocxBlob } from '../utils/docxGenerator';
 import { getLogoBase64 } from '../utils/logo';
 import { saveDraftToStorage, loadDraftFromStorage, clearDraftFromStorage } from '../utils/indexedDb';
@@ -201,7 +201,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
     setMotItems((prev) =>
       prev.map((item) =>
         item.id === id
-          ? { ...item, [field]: field === 'code' ? value.toUpperCase() : value }
+          ? { ...item, [field]: value }
           : item
       )
     );
@@ -294,27 +294,12 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
 
   return (
     <div className="min-h-screen bg-[#eef2f7] py-4 sm:py-8 px-3 sm:px-6 text-[#212529] font-sans pb-36 print:bg-white print:p-0">
-      {/* Top Banner Controls (Not in Print) */}
-      <div className="max-w-[860px] mx-auto mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 print:hidden">
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-[#1a6b8a] font-medium bg-cyan-50 border border-cyan-200 py-2.5 px-3 rounded-xl sm:rounded-lg shadow-sm">
-          <FileText className="w-4 h-4 text-[#29a9e1] flex-shrink-0" />
-          <span>Interactive Live Form & Client-Side .docx Export</span>
-        </div>
-        <button
-          onClick={onOpenHtmlModal}
-          className="flex items-center justify-center gap-2 bg-[#1e3a5f] text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl sm:rounded-lg hover:bg-[#1a6b8a] active:scale-[0.99] transition shadow-md"
-        >
-          <Code className="w-4 h-4 text-[#29a9e1]" />
-          View / Export Standalone Single-File (.html)
-        </button>
-      </div>
-
       {/* Page Header Card */}
       <div className="max-w-[860px] mx-auto mb-4 sm:mb-5 bg-white rounded-2xl sm:rounded-xl p-4 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-gray-100 print:shadow-none print:border print:border-gray-300 print:mb-3">
         {logoSrc ? (
-          <img src={logoSrc} className="h-24 sm:h-28 w-auto block object-contain" alt="LSCG Logo" />
+          <img src={logoSrc} className="h-[120px] sm:h-[140px] w-auto block object-contain" alt="LSCG Logo" />
         ) : (
-          <div className="h-24 sm:h-28 w-88 sm:w-96 bg-gray-100 animate-pulse rounded flex items-center justify-center font-bold text-[#1e3a5f]">
+          <div className="h-[120px] sm:h-[140px] w-[440px] sm:w-[480px] bg-gray-100 animate-pulse rounded flex items-center justify-center font-bold text-[#1e3a5f]">
             LSCG LOGO
           </div>
         )}
@@ -385,7 +370,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Rocky Meek"
+                placeholder="Contractor / Foreman Name"
                 value={contractor}
                 onChange={(e) => {
                   setContractor(e.target.value);
@@ -546,13 +531,18 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
 
                 <div>
                   <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1 mt-1">Activity Description</span>
-                  <input
-                    type="text"
-                    placeholder="Describe work activity"
+                  <select
                     value={row.description}
                     onChange={(e) => handleUpdateActivity(row.id, 'description', e.target.value)}
-                    className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20"
-                  />
+                    className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 text-gray-800"
+                  >
+                    <option value="">Select activity...</option>
+                    {ACTIVITY_DESCRIPTIONS.map((desc) => (
+                      <option key={desc} value={desc}>
+                        {desc}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-[1fr_90px] gap-2 sm:contents pt-1 sm:pt-0">
@@ -616,7 +606,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
           </div>
         </div>
         <div className="p-5">
-          <div className="hidden sm:grid grid-cols-[2fr_1fr_80px_32px] gap-2 pb-1.5 border-b border-[#e9ecef] mb-2 text-[10px] font-bold uppercase tracking-wider text-[#adb5bd]">
+          <div className="hidden sm:grid grid-cols-[1.3fr_1.7fr_80px_32px] gap-2 pb-1.5 border-b border-[#e9ecef] mb-2 text-[10px] font-bold uppercase tracking-wider text-[#adb5bd]">
             <span>Activity</span>
             <span>Code</span>
             <span>Hours</span>
@@ -627,7 +617,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
             {motItems.map((row, index) => (
               <div
                 key={row.id}
-                className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_80px_32px] gap-2.5 sm:gap-2 items-start bg-slate-50/80 sm:bg-gray-50/50 p-3.5 sm:p-0 rounded-2xl sm:rounded-lg border border-slate-200 sm:border-0"
+                className="grid grid-cols-1 sm:grid-cols-[1.3fr_1.7fr_80px_32px] gap-2.5 sm:gap-2 items-start bg-slate-50/80 sm:bg-gray-50/50 p-3.5 sm:p-0 rounded-2xl sm:rounded-lg border border-slate-200 sm:border-0"
               >
                 <div className="flex items-center justify-between sm:hidden pb-1 border-b border-slate-200">
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1e7aaa]">
@@ -644,25 +634,37 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
 
                 <div>
                   <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1 mt-1">MOT Description</span>
-                  <input
-                    type="text"
-                    placeholder="MOT activity description"
+                  <select
                     value={row.activity}
                     onChange={(e) => handleUpdateMot(row.id, 'activity', e.target.value)}
-                    className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1]"
-                  />
+                    title={row.activity}
+                    className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] text-gray-800"
+                  >
+                    <option value="">Select MOT description...</option>
+                    {MOT_ACTIVITIES.map((act) => (
+                      <option key={act} value={act}>
+                        {act}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-[1fr_80px] gap-2 sm:contents">
                   <div>
                     <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1">Code</span>
-                    <input
-                      type="text"
-                      placeholder="Code"
+                    <select
                       value={row.code}
                       onChange={(e) => handleUpdateMot(row.id, 'code', e.target.value)}
-                      className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] uppercase font-mono focus:bg-white focus:outline-none focus:border-[#29a9e1]"
-                    />
+                      title={row.code}
+                      className="w-full px-3 sm:px-2 py-2 sm:py-1.5 border border-[#dee2e6] rounded-xl sm:rounded text-sm sm:text-[13px] bg-white sm:bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] text-gray-800"
+                    >
+                      <option value="">Select code...</option>
+                      {MOT_CODES.map((code) => (
+                        <option key={code} value={code}>
+                          {code}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <span className="sm:hidden text-[10px] font-bold uppercase tracking-wide text-slate-500 block mb-1">Hours</span>
@@ -807,7 +809,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
           className="flex-1 py-3.5 sm:py-3 px-5 bg-[#1e3a5f] hover:bg-[#152e4d] active:scale-[0.99] text-white rounded-xl sm:rounded-lg font-bold sm:font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition cursor-pointer"
         >
           <Mail className="w-4 h-4 text-[#29a9e1]" />
-          Email Report Dispatcher
+          Submit Report
         </button>
         
         <div className="flex gap-2.5 sm:gap-2">
