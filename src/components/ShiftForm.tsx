@@ -10,7 +10,8 @@ import {
   Download,
   Code,
   Mail,
-  Save
+  Save,
+  BookOpen
 } from 'lucide-react';
 import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES, ACTIVITY_DESCRIPTIONS, MOT_ACTIVITIES, MOT_CODES } from '../types';
 import { generateDocxBlob } from '../utils/docxGenerator';
@@ -20,9 +21,10 @@ import { EmailModal } from './EmailModal';
 
 interface ShiftFormProps {
   onOpenHtmlModal: () => void;
+  onOpenGuideModal: () => void;
 }
 
-export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
+export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGuideModal }) => {
   const [logoSrc, setLogoSrc] = useState<string>('');
   const [liveDate, setLiveDate] = useState<string>('');
   const [toast, setToast] = useState<{ show: boolean; msg: string; error?: boolean }>({
@@ -304,7 +306,15 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal }) => {
           </div>
         )}
         <div className="w-full sm:w-auto text-left sm:text-right flex-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-          <div className="flex items-center justify-start sm:justify-end gap-1.5 mb-2 print:hidden">
+          <div className="flex items-center justify-start sm:justify-end gap-2 mb-2 print:hidden">
+            <button
+              type="button"
+              onClick={onOpenGuideModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#e8f6fb] text-[#1e7aaa] hover:bg-[#d4f0fc] border border-[#29a9e1]/20 shadow-2xs cursor-pointer transition-all active:scale-95"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#29a9e1]" />
+              User Guide / PDF Guide
+            </button>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               ⚡ Auto-Save {lastAutoSaved ? `(Saved ${lastAutoSaved})` : 'Active'}
