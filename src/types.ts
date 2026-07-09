@@ -57,6 +57,9 @@ export const FIBER_MATERIAL_TYPES = [
   '96ct Fiber',
   '144ct Fiber',
   'Tracer Wire',
+  'Mule Tape',
+  'Wreck Out',
+  'MacLean Switch',
   'Stingray',
   'Strand',
   'Other'
