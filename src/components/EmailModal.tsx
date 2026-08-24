@@ -38,7 +38,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
       if (saved) {
         setRecipients(saved);
       } else {
-        setRecipients('FLConstruction@lscg.com, TillmanProduction@lscg.com');
+        setRecipients('Tillman.Construction@itgcomm.com, Tillman.Production@itgcomm.com');
       }
     }
   }, [isOpen]);
