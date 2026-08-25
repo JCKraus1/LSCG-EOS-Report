@@ -34,18 +34,20 @@ export const EmailModal: React.FC<EmailModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const saved = localStorage.getItem('lscg_default_email_recipients_v2');
+      const saved = localStorage.getItem('lscg_default_email_recipients_v3');
       if (saved) {
         setRecipients(saved);
       } else {
-        setRecipients('Tillman.Construction@itgcomm.com, Tillman.Production@itgcomm.com');
+        const defaultList = 'Tillman.Construction@itgcomm.com, Tillman.Production@itgcomm.com';
+        setRecipients(defaultList);
+        localStorage.setItem('lscg_default_email_recipients_v3', defaultList);
       }
     }
   }, [isOpen]);
 
   const handleRecipientsChange = (val: string) => {
     setRecipients(val);
-    localStorage.setItem('lscg_default_email_recipients_v2', val);
+    localStorage.setItem('lscg_default_email_recipients_v3', val);
   };
 
   if (!isOpen) return null;
