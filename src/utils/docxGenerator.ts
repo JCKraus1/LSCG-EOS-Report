@@ -238,7 +238,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
                             children: [
                               new ImageRun({
                                 data: logoBuffer,
-                                transformation: { width: 180, height: 65 },
+                                transformation: { width: 80, height: 80 },
                                 type: 'png'
                               })
                             ]

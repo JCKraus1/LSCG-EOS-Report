@@ -52,7 +52,7 @@ export async function getStandaloneHtml(): Promise<string> {
       padding: 16px 24px;
       box-shadow: var(--shadow);
     }
-    .logo-img { height: 130px; width: auto; display: block; }
+    .logo-img { height: 90px; width: auto; max-width: 120px; object-fit: contain; display: block; }
     .header-right { text-align: right; }
     .header-right .report-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
     .header-right .report-sub { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
@@ -695,7 +695,7 @@ export async function getStandaloneHtml(): Promise<string> {
                               children: [
                                 new ImageRun({
                                   data: logoBuffer,
-                                  transformation: { width: 180, height: 65 },
+                                  transformation: { width: 80, height: 80 },
                                   type: 'png'
                                 })
                               ]

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES, ACTIVITY_DESCRIPTIONS, MOT_ACTIVITIES, MOT_CODES } from '../types';
 import { generateDocxBlob } from '../utils/docxGenerator';
-import { getLogoBase64 } from '../utils/logo';
+import { getLogoBase64, itgLogo } from '../utils/logo';
 import { saveDraftToStorage, loadDraftFromStorage, clearDraftFromStorage } from '../utils/indexedDb';
 import { EmailModal } from './EmailModal';
 
@@ -25,7 +25,7 @@ interface ShiftFormProps {
 }
 
 export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGuideModal }) => {
-  const [logoSrc, setLogoSrc] = useState<string>('');
+  const [logoSrc, setLogoSrc] = useState<string>(itgLogo);
   const [liveDate, setLiveDate] = useState<string>('');
   const [toast, setToast] = useState<{ show: boolean; msg: string; error?: boolean }>({
     show: false,
@@ -299,10 +299,10 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       {/* Page Header Card */}
       <div className="max-w-[860px] mx-auto mb-4 sm:mb-5 bg-white rounded-2xl sm:rounded-xl p-4 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-gray-100 print:shadow-none print:border print:border-gray-300 print:mb-3">
         {logoSrc ? (
-          <img src={logoSrc} className="h-[120px] sm:h-[140px] w-auto block object-contain" alt="LSCG Logo" />
+          <img src={logoSrc} className="h-[90px] sm:h-[110px] w-auto block object-contain max-w-[140px]" alt="ITG Logo" />
         ) : (
-          <div className="h-[120px] sm:h-[140px] w-[440px] sm:w-[480px] bg-gray-100 animate-pulse rounded flex items-center justify-center font-bold text-[#1e3a5f]">
-            LSCG LOGO
+          <div className="h-[90px] sm:h-[110px] w-[110px] bg-gray-100 animate-pulse rounded flex items-center justify-center font-bold text-[#1e3a5f]">
+            ITG LOGO
           </div>
         )}
         <div className="w-full sm:w-auto text-left sm:text-right flex-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
