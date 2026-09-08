@@ -1,5 +1,5 @@
 /**
- * Generates or fetches the exact crisp PNG logo for LSCG / Full Circle Fiber.
+ * Generates or fetches the exact crisp PNG logo for LSCG / Full Circle Fiber / ITG.
  * Prioritizes loading `/logo.png` if uploaded by the user into the public folder.
  * Falls back to a 100% accurate Canvas recreation of the official LSCG icon.
  */

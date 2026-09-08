@@ -271,7 +271,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
                             spacing: { before: 40, after: 0 },
                             children: [
                               new TextRun({
-                                text: 'LSCG / Full Circle Fiber  —  Tillman Fiber',
+                                text: 'LSCG / Full Circle Fiber / ITG  —  Tillman Fiber',
                                 bold: true,
                                 size: 14,
                                 color: GRAY
@@ -465,7 +465,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
             border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'CCCCCC', space: 4 } },
             children: [
               new TextRun({
-                text: `Generated: ${new Date().toLocaleString()} — LSCG / Full Circle Fiber — Tillman Fiber`,
+                text: `Generated: ${new Date().toLocaleString()} — LSCG / Full Circle Fiber / ITG — Tillman Fiber`,
                 size: 16,
                 color: GRAY,
                 italics: true

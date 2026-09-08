@@ -236,7 +236,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     project,
     contractor,
     submittedBy,
-    vendor: 'LSCG / Full Circle Fiber',
+    vendor: 'LSCG / Full Circle Fiber / ITG',
     totalFootage,
     startAddress,
     endAddress,
@@ -398,7 +398,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
             <div className="flex flex-col gap-1">
               <label className="text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider text-[#6c757d]">Vendor</label>
               <div className="px-3.5 sm:px-3 py-2.5 sm:py-2 bg-[#e8f6fb] border border-[#b3dff0] rounded-xl sm:rounded-lg text-sm sm:text-[13px] font-semibold text-[#1a6b8a]">
-                LSCG / Full Circle Fiber
+                LSCG / Full Circle Fiber / ITG
               </div>
             </div>
             <div className="flex flex-col gap-1">
