@@ -61,7 +61,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
 
   const initDefaultRows = () => {
     const defaultMats = [
-      '1.5" Conduit Bore',
+      '1.25" Conduit Bore',
       '24 Way HEX Bore',
       '12 Way HEX Bore',
       '2 Way HEX Bore',

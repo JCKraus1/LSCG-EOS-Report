@@ -33,6 +33,7 @@ export interface ShiftReportData {
 }
 
 export const MATERIAL_TYPES = [
+  '4" Conduit Bore',
   '1.5" Conduit Bore',
   '1.25" Conduit Bore',
   '24 Way HEX Bore',
@@ -62,6 +63,10 @@ export const FIBER_MATERIAL_TYPES = [
   'MacLean Switch',
   'Stingray',
   'Strand',
+  'TCSS1 - Splice-loose tube cable',
+  'TCSS9 - Prep ribbon cable, Place Terminal Closure',
+  'TCSS11 - Prep loose tube, Place Terminal Closure',
+  'TCHR47 - Splicer - Normal Rate (Per HR)',
   'Other'
 ] as const;
 
@@ -69,7 +74,8 @@ export const ACTIVITY_DESCRIPTIONS = [
   'Aerial',
   'Directional Bore',
   'Hand Trench',
-  'Underground'
+  'Underground',
+  'Fiber Splicing'
 ] as const;
 
 export const MOT_ACTIVITIES = [
