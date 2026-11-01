@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText,
   Printer,
@@ -11,13 +11,30 @@ import {
   Code,
   Mail,
   Save,
-  BookOpen
+  BookOpen,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  Send
 } from 'lucide-react';
-import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES, ACTIVITY_DESCRIPTIONS, MOT_ACTIVITIES, MOT_CODES } from '../types';
-import { generateDocxBlob } from '../utils/docxGenerator';
+import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES, ACTIVITY_DESCRIPTIONS, MOT_ACTIVITIES, MOT_CODES, EosPayload, EosQuantities } from '../types';
+import { generateDocxBlob, generateDocxBase64 } from '../utils/docxGenerator';
 import { getLogoBase64 } from '../utils/logo';
 import { saveDraftToStorage, loadDraftFromStorage, clearDraftFromStorage } from '../utils/indexedDb';
+import { MARKETS, Market } from '../config';
 import { EmailModal } from './EmailModal';
+import {
+  cleanProjectId,
+  isValidProjectId,
+  recordRecentProjectId,
+  getRecentProjectIds,
+  generateSubmissionId,
+  sendPayloadToWebhook,
+  enqueueReport,
+  initQueueEngine,
+  subscribeQueueCount,
+  processQueue
+} from '../utils/syncQueue';
 
 interface ShiftFormProps {
   onOpenHtmlModal: () => void;
@@ -36,12 +53,19 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: boolean }>({});
   const [lastAutoSaved, setLastAutoSaved] = useState<string>('');
 
+  // Queue state
+  const [queueCount, setQueueCount] = useState<number>(0);
+  const [isSubmittingToWebhook, setIsSubmittingToWebhook] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   // Form State
+  const [submissionId, setSubmissionId] = useState<string>(() => generateSubmissionId());
   const [date, setDate] = useState<string>('');
-  const [project, setProject] = useState<string>('');
+  const [market, setMarket] = useState<Market | ''>('');
+  const [projectId, setProjectId] = useState<string>('');
+  const [projectIdError, setProjectIdError] = useState<boolean>(false);
   const [contractor, setContractor] = useState<string>('');
   const [submittedBy, setSubmittedBy] = useState<string>('');
-  const [totalFootage, setTotalFootage] = useState<string>('');
   const [startAddress, setStartAddress] = useState<string>('');
   const [endAddress, setEndAddress] = useState<string>('');
   const [activityType, setActivityType] = useState<'construction' | 'fiber'>('construction');
@@ -50,6 +74,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   const [nextDay, setNextDay] = useState<string>('');
   const [signature, setSignature] = useState<string>('');
   const [supervisor, setSupervisor] = useState<string>('');
+
+  // Drill Footage (ft) manual entry
+  const [drillFootage, setDrillFootage] = useState<string>('0');
 
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [motItems, setMotItems] = useState<MotRow[]>([]);
@@ -99,22 +126,31 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       })
     );
 
+    // Offline Queue subscription & auto-retry engine
+    const cleanupQueueEngine = initQueueEngine();
+    const unsubscribeCount = subscribeQueueCount((count) => setQueueCount(count));
+
     // Offline Draft Recovery
     loadDraftFromStorage().then((draft) => {
       if (
         draft &&
-        (draft.project ||
+        (draft.projectId ||
+          draft.market ||
+          draft.project ||
           draft.contractor ||
           draft.submittedBy ||
+          draft.drillFootage ||
           draft.totalFootage ||
           draft.activities?.some((a: any) => a.description || a.quantity) ||
           draft.motItems?.some((m: any) => m.activity || m.hours))
       ) {
+        if (draft.submissionId) setSubmissionId(draft.submissionId);
         setDate(draft.date || now.toISOString().split('T')[0]);
-        setProject(draft.project || '');
+        setMarket((draft.market as Market) || '');
+        setProjectId(draft.projectId || draft.project || '');
         setContractor(draft.contractor || '');
         setSubmittedBy(draft.submittedBy || '');
-        setTotalFootage(draft.totalFootage || '');
+        setDrillFootage(draft.drillFootage !== undefined ? String(draft.drillFootage) : (draft.totalFootage || '0'));
         setStartAddress(draft.startAddress || '');
         setEndAddress(draft.endAddress || '');
         setActivityType(draft.activityType || 'construction');
@@ -132,6 +168,11 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         initDefaultRows();
       }
     });
+
+    return () => {
+      cleanupQueueEngine();
+      unsubscribeCount();
+    };
   }, []);
 
   // Auto-Save Effect on keystroke / form state change
@@ -139,11 +180,15 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     if (!date) return;
     const timer = setTimeout(() => {
       saveDraftToStorage({
+        submissionId,
         date,
-        project,
+        market,
+        projectId,
+        project: projectId || 'Tillman Fiber',
         contractor,
         submittedBy,
-        totalFootage,
+        drillFootage,
+        totalFootage: drillFootage,
         startAddress,
         endAddress,
         activityType,
@@ -159,7 +204,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [date, project, contractor, submittedBy, totalFootage, startAddress, endAddress, activityType, revisions, issues, nextDay, signature, supervisor, activities, motItems]);
+  }, [submissionId, date, market, projectId, contractor, submittedBy, drillFootage, startAddress, endAddress, activityType, revisions, issues, nextDay, signature, supervisor, activities, motItems]);
 
   const handleAddActivity = () => {
     setActivities((prev) => [
@@ -209,15 +254,60 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     );
   };
 
+  // Helper to parse integer quantity, defaulting empty/blank to 0
+  const parseQty = (val: string): number => {
+    if (!val || !val.trim()) return 0;
+    const n = parseInt(val, 10);
+    return isNaN(n) || n < 0 ? 0 : n;
+  };
+
+  /**
+   * Automatically derives the 5 SOW quantities from the Construction EOS activity rows
+   * and the Total Drill Footage input.
+   */
+  const computedQuantities: EosQuantities = useMemo(() => {
+    let tobyCount = 0;
+    let dapCount = 0;
+    let handHoleCount = 0;
+    let fdhCount = 0;
+
+    for (const act of activities) {
+      const mat = (act.material || '').trim().toLowerCase();
+      const qty = parseQty(act.quantity);
+      if (qty <= 0) continue;
+
+      if (mat.includes('toby')) {
+        tobyCount += qty;
+      } else if (mat.includes('dap')) {
+        dapCount += qty;
+      } else if (mat.includes('hand hole') || mat.includes('handhole') || mat.includes('vault')) {
+        handHoleCount += qty;
+      } else if (mat.includes('fdh')) {
+        fdhCount += qty;
+      }
+    }
+
+    return {
+      drillFootage: parseQty(drillFootage),
+      tobyBoxes: tobyCount,
+      daps: dapCount,
+      handHoles: handHoleCount,
+      fdh: fdhCount
+    };
+  }, [activities, drillFootage]);
+
   const handleClearForm = () => {
     clearDraftFromStorage();
     setLastAutoSaved('');
     const now = new Date();
+    setSubmissionId(generateSubmissionId());
     setDate(now.toISOString().split('T')[0]);
-    setProject('');
+    setMarket('');
+    setProjectId('');
+    setProjectIdError(false);
     setContractor('');
     setSubmittedBy('');
-    setTotalFootage('');
+    setDrillFootage('0');
     setStartAddress('');
     setEndAddress('');
     setActivityType('construction');
@@ -231,13 +321,30 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     showToast('Form & offline draft cleared.');
   };
 
+  // Suggestion list for the currently selected market
+  const recentProjectsForMarket = useMemo(() => {
+    return getRecentProjectIds(market);
+  }, [market]);
+
+  const handleProjectIdBlur = () => {
+    if (!projectId) return;
+    const cleaned = cleanProjectId(projectId);
+    setProjectId(cleaned);
+    const valid = isValidProjectId(cleaned);
+    setProjectIdError(!valid);
+  };
+
   const currentReportData: ShiftReportData = {
+    submissionId,
     date,
-    project,
+    market,
+    projectId,
+    project: projectId || 'Tillman Fiber',
     contractor,
     submittedBy,
-    vendor: 'LSCG / Full Circle Fiber / ITG',
-    totalFootage,
+    vendor: 'ITG Communications',
+    totalFootage: drillFootage,
+    quantities: computedQuantities,
     startAddress,
     endAddress,
     activityType,
@@ -253,23 +360,158 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   const validateForm = () => {
     const errs: { [key: string]: boolean } = {};
     if (!date || !date.trim()) errs.date = true;
-    if (!project || !project.trim()) errs.project = true;
+    if (!market || !market.trim()) errs.market = true;
+    
+    const cleaned = cleanProjectId(projectId);
+    if (!cleaned || !isValidProjectId(cleaned)) {
+      errs.projectId = true;
+      setProjectIdError(true);
+    } else {
+      setProjectIdError(false);
+    }
+
     if (!contractor || !contractor.trim()) errs.contractor = true;
     if (!submittedBy || !submittedBy.trim()) errs.submittedBy = true;
 
     setValidationErrors(errs);
     const missing: string[] = [];
     if (errs.date) missing.push('Date');
-    if (errs.project) missing.push('Project #');
+    if (errs.market) missing.push('Market');
+    if (errs.projectId) missing.push('Valid Project ID');
     if (errs.contractor) missing.push('Contractor Name');
     if (errs.submittedBy) missing.push('Submitted By');
 
     if (missing.length > 0) {
-      showToast(`⚠️ Missing required fields: ${missing.join(', ')}`, true);
+      showToast(`⚠️ Please check required fields: ${missing.join(', ')}`, true);
       window.scrollTo({ top: 60, behavior: 'smooth' });
       return false;
     }
     return true;
+  };
+
+  /**
+   * Builds the exact JSON payload matching Requirement 6
+   */
+  const buildEosPayload = async (): Promise<EosPayload> => {
+    const cleanedId = cleanProjectId(projectId);
+    const reportDateIso = date || new Date().toISOString().split('T')[0];
+    const fileName = `EOS_Report_${cleanedId}_${reportDateIso}.docx`;
+
+    // 1. Generate DOCX as raw Base64 (no "data:" prefix)
+    const { base64 } = await generateDocxBase64(currentReportData, fileName);
+
+    // 2. Footage by method text summary
+    const footageLines = activities
+      .filter((a) => a.description && ACTIVITY_DESCRIPTIONS.includes(a.description as any))
+      .map((a) => `• ${a.description}: ${a.quantity || '0'}${a.material ? ` (${a.material})` : ''}`);
+    const footageByMethodText = [
+      drillFootage && drillFootage !== '0' ? `• Drill Footage: ${drillFootage} ft` : '',
+      ...footageLines
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    // 3. Materials summary text
+    const validActivities = activities.filter(
+      (a) => a.material && a.material !== 'Select type...' && (a.quantity || a.description)
+    );
+    const materialsSummaryText = validActivities
+      .map(
+        (a) =>
+          `• ${a.material}: ${a.quantity || '0'} ${a.description ? `(${a.description})` : ''}`.trim()
+      )
+      .join('\n');
+
+    // 4. MOT summary text
+    const validMot = motItems.filter((m) => m.activity.trim() || m.code.trim());
+    const motSummaryText = validMot
+      .map((m) => `• ${m.activity || 'MOT'} [Code: ${m.code || 'N/A'}] - ${m.hours || '0'} hrs`)
+      .join('\n');
+
+    const deviations = [
+      issues ? `Issues: ${issues}` : '',
+      revisions ? `Revisions: ${revisions}` : ''
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    return {
+      submissionId,
+      reportDate: reportDateIso,
+      market,
+      projectId: cleanedId,
+      project: 'Tillman Fiber',
+      vendor: 'ITG Communications',
+      contractor: contractor.trim(),
+      submittedBy: submittedBy.trim(),
+      startAddress: startAddress.trim(),
+      endAddress: endAddress.trim(),
+      deviations,
+      quantities: computedQuantities,
+      footageByMethodText,
+      materialsSummaryText,
+      motSummaryText,
+      fileName,
+      fileBase64: base64
+    };
+  };
+
+  /**
+   * Internal submission to Power Automate / SharePoint
+   */
+  const submitToSharePoint = async (): Promise<boolean> => {
+    setIsSubmittingToWebhook(true);
+
+    try {
+      const payload = await buildEosPayload();
+
+      // Remember Project ID for this market
+      recordRecentProjectId(payload.market, payload.projectId);
+
+      // Attempt immediate send with 120s timeout
+      const result = await sendPayloadToWebhook(payload);
+
+      if (result.success) {
+        const itemMsg = result.itemId ? ` (item #${result.itemId})` : '';
+        showToast(`Saved to SharePoint${itemMsg}`);
+        // Reset form and generate fresh submissionId on success
+        handleClearForm();
+        return true;
+      } else {
+        // Enqueue offline in IndexedDB
+        await enqueueReport(payload);
+        showToast('Saved offline. Will send automatically.', true);
+        return false;
+      }
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      try {
+        const payload = await buildEosPayload();
+        await enqueueReport(payload);
+        showToast('Saved offline. Will send automatically.', true);
+      } catch {
+        showToast('Error preparing submission. Please try again.', true);
+      }
+      return false;
+    } finally {
+      setIsSubmittingToWebhook(false);
+    }
+  };
+
+  /**
+   * Tapping Submit Report button validates the form and opens the Email Modal.
+   */
+  const handleInitiateSubmit = () => {
+    if (!validateForm()) return;
+    setIsEmailModalOpen(true);
+  };
+
+  /**
+   * Executed when the user clicks "Confirm" in the confirmation modal
+   */
+  const handleConfirmSubmit = async () => {
+    setShowConfirmModal(false);
+    await submitToSharePoint();
   };
 
   const handleGenerateReport = async () => {
@@ -328,12 +570,20 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
 
       {/* 1. General Information */}
       <div className="max-w-[860px] mx-auto mb-4 bg-white rounded-2xl sm:rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden print:shadow-none print:border print:border-gray-300 print:mb-3">
-        <div className="bg-[#1e7aaa] px-4 sm:px-5 py-3 flex items-center gap-2.5 text-white">
-          <FileText className="w-4 h-4 flex-shrink-0" />
-          <div>
-            <strong className="text-[13px] font-semibold block leading-tight">General information</strong>
-            <span className="text-[11px] opacity-80 block">Report header details (* Required fields)</span>
+        <div className="bg-[#1e7aaa] px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+          <div className="flex items-center gap-2.5">
+            <FileText className="w-4 h-4 flex-shrink-0" />
+            <div>
+              <strong className="text-[13px] font-semibold block leading-tight">General information</strong>
+              <span className="text-[11px] opacity-80 block">Report header details (* Required fields)</span>
+            </div>
           </div>
+          {queueCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-100 border border-amber-300/40">
+              <CloudOff className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>{queueCount} waiting to send</span>
+            </div>
+          )}
         </div>
         <div className="p-4 sm:p-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-3 mb-3.5 sm:mb-3">
@@ -355,25 +605,67 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
                 }`}
               />
             </div>
+
             <div className="flex flex-col gap-1">
-              <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.project ? 'text-red-600' : 'text-[#6c757d]'}`}>
-                Project # <span className="text-red-500">*</span>
+              <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.market ? 'text-red-600' : 'text-[#6c757d]'}`}>
+                Market <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={market}
+                onChange={(e) => {
+                  setMarket(e.target.value as Market);
+                  if (validationErrors.market) setValidationErrors((prev) => ({ ...prev, market: false }));
+                }}
+                className={`w-full px-3 sm:px-2.5 py-2.5 sm:py-2 border rounded-xl sm:rounded-lg text-sm sm:text-[13px] transition font-medium ${
+                  validationErrors.market
+                    ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50 text-red-900'
+                    : 'border-[#dee2e6] bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 text-slate-800'
+                }`}
+              >
+                <option value="">Select market...</option>
+                {MARKETS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${projectIdError || validationErrors.projectId ? 'text-red-600' : 'text-[#6c757d]'}`}>
+                Project ID <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. TF-2026-01"
-                value={project}
+                list="eos-recent-projects-list"
+                placeholder="e.g. BHCD-FPW-03-E"
+                value={projectId}
                 onChange={(e) => {
-                  setProject(e.target.value);
-                  if (validationErrors.project) setValidationErrors((prev) => ({ ...prev, project: false }));
+                  setProjectId(e.target.value);
+                  if (projectIdError) setProjectIdError(false);
+                  if (validationErrors.projectId) setValidationErrors((prev) => ({ ...prev, projectId: false }));
                 }}
-                className={`w-full px-3 sm:px-2.5 py-2.5 sm:py-2 border rounded-xl sm:rounded-lg text-sm sm:text-[13px] transition ${
-                  validationErrors.project
+                onBlur={handleProjectIdBlur}
+                className={`w-full px-3 sm:px-2.5 py-2.5 sm:py-2 border rounded-xl sm:rounded-lg text-sm sm:text-[13px] uppercase font-mono tracking-wider transition ${
+                  projectIdError || validationErrors.projectId
                     ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50 text-red-900 placeholder-red-400 font-medium'
                     : 'border-[#dee2e6] bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20'
                 }`}
               />
+              <datalist id="eos-recent-projects-list">
+                {recentProjectsForMarket.map((id) => (
+                  <option key={id} value={id} />
+                ))}
+              </datalist>
+              {projectIdError && (
+                <span className="text-[11px] font-bold text-red-600 mt-0.5">
+                  Check the Project ID (3-30 chars, letters and numbers)
+                </span>
+              )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-3 mb-3.5 sm:mb-3">
             <div className="flex flex-col gap-1">
               <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.contractor ? 'text-red-600' : 'text-[#6c757d]'}`}>
                 Contractor name <span className="text-red-500">*</span>
@@ -393,14 +685,14 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
                 }`}
               />
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-3">
+
             <div className="flex flex-col gap-1">
               <label className="text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider text-[#6c757d]">Vendor</label>
-              <div className="px-3.5 sm:px-3 py-2.5 sm:py-2 bg-[#e8f6fb] border border-[#b3dff0] rounded-xl sm:rounded-lg text-sm sm:text-[13px] font-semibold text-[#1a6b8a]">
-                LSCG / Full Circle Fiber / ITG
+              <div className="px-3.5 sm:px-3 py-2.5 sm:py-2 bg-[#e8f6fb] border border-[#b3dff0] rounded-xl sm:rounded-lg text-sm sm:text-[13px] font-semibold text-[#1a6b8a] truncate">
+                ITG Communications
               </div>
             </div>
+
             <div className="flex flex-col gap-1">
               <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.submittedBy ? 'text-red-600' : 'text-[#6c757d]'}`}>
                 Submitted by <span className="text-red-500">*</span>
@@ -424,7 +716,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         </div>
       </div>
 
-      {/* 2. Construction Activity */}
+      {/* 3. Work Activities */}
       <div className="max-w-[860px] mx-auto mb-4 bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden print:shadow-none print:border print:border-gray-300 print:mb-3">
         <div className="bg-[#1e7aaa] px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white">
           <div className="flex items-center gap-2.5">
@@ -433,7 +725,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
               <strong className="text-[13px] font-semibold block leading-tight">
                 {activityType === 'fiber' ? 'Fiber EOS' : 'Construction EOS'}
               </strong>
-              <span className="text-[11px] opacity-80 block">Work completed this shift</span>
+              <span className="text-[11px] opacity-80 block">Additional work completed this shift (kept on report & Word doc)</span>
             </div>
           </div>
           <div className="flex bg-black/15 p-0.5 rounded-lg self-start sm:self-auto">
@@ -465,20 +757,39 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           {/* Total Drill Footage Highlight Bar & Global Addresses */}
           <div className="flex flex-col gap-3 mb-4 bg-gray-50/50 border border-gray-200 rounded-xl p-4">
             {activityType !== 'fiber' && (
-              <div className="flex flex-wrap items-center gap-3 p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#1a6b8a]">
-                  Total drill footage (manual entry):
-                </label>
-                <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={totalFootage}
-                    onChange={(e) => setTotalFootage(e.target.value)}
-                    className="w-24 px-2 py-1.5 border border-[#b3dff0] rounded-lg text-sm font-bold text-[#1a6b8a] bg-white text-center focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 shadow-inner"
-                  />
-                  <span className="text-sm font-bold text-[#1a6b8a]">FT</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#1a6b8a]">
+                    Total drill footage:
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={drillFootage}
+                      onChange={(e) => setDrillFootage(e.target.value)}
+                      className="w-24 px-2 py-1.5 border border-[#b3dff0] rounded-lg text-sm font-bold text-[#1a6b8a] bg-white text-center focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 shadow-inner"
+                    />
+                    <span className="text-sm font-bold text-[#1a6b8a]">FT</span>
+                  </div>
+                </div>
+
+                {/* Live SOW counts derived automatically from rows */}
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[#1a6b8a]">
+                  <span className="px-2 py-1 bg-white/80 rounded border border-[#b3dff0]">
+                    Toby Boxes: <strong>{computedQuantities.tobyBoxes}</strong>
+                  </span>
+                  <span className="px-2 py-1 bg-white/80 rounded border border-[#b3dff0]">
+                    DAPs: <strong>{computedQuantities.daps}</strong>
+                  </span>
+                  <span className="px-2 py-1 bg-white/80 rounded border border-[#b3dff0]">
+                    Hand Holes: <strong>{computedQuantities.handHoles}</strong>
+                  </span>
+                  <span className="px-2 py-1 bg-white/80 rounded border border-[#b3dff0]">
+                    FDH: <strong>{computedQuantities.fdh}</strong>
+                  </span>
                 </div>
               </div>
             )}
@@ -806,27 +1117,34 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           disabled={generating}
           className="flex-1 py-3.5 sm:py-3 px-5 bg-[#1e7aaa] hover:bg-[#1a6b8a] active:scale-[0.99] disabled:opacity-75 text-white rounded-xl sm:rounded-lg font-bold sm:font-semibold text-sm shadow-[0_4px_12px_rgba(30,122,170,0.25)] flex items-center justify-center gap-2 transition cursor-pointer"
         >
-          <Download className="w-4 h-4 animate-bounce" />
+          <Download className="w-4 h-4" />
           {generating ? 'Generating .docx...' : 'Generate Word Report (.docx)'}
         </button>
 
         <button
           type="button"
-          onClick={() => {
-            if (!validateForm()) return;
-            setIsEmailModalOpen(true);
-          }}
-          className="flex-1 py-3.5 sm:py-3 px-5 bg-[#1e3a5f] hover:bg-[#152e4d] active:scale-[0.99] text-white rounded-xl sm:rounded-lg font-bold sm:font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition cursor-pointer"
+          onClick={handleInitiateSubmit}
+          disabled={isSubmittingToWebhook}
+          className="flex-1 py-3.5 sm:py-3 px-5 bg-[#1e3a5f] hover:bg-[#152e4d] active:scale-[0.99] text-white rounded-xl sm:rounded-lg font-bold sm:font-semibold text-sm shadow-md flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-75"
         >
-          <Mail className="w-4 h-4 text-[#29a9e1]" />
-          Submit Report
+          {isSubmittingToWebhook ? (
+            <>
+              <RefreshCw className="w-4 h-4 text-[#29a9e1] animate-spin" />
+              Sending to SharePoint...
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 text-[#29a9e1]" />
+              Submit Report
+            </>
+          )}
         </button>
-        
+
         <div className="flex gap-2.5 sm:gap-2">
           <button
             type="button"
             onClick={() => window.print()}
-            className="flex-1 sm:flex-none px-5 py-3.5 sm:py-3 bg-white hover:bg-gray-100 text-[#495057] border border-[#dee2e6] rounded-xl sm:rounded-lg font-bold sm:font-medium text-xs sm:text-[13px] transition flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 sm:flex-none px-4 py-3.5 sm:py-3 bg-white hover:bg-gray-100 text-[#495057] border border-[#dee2e6] rounded-xl sm:rounded-lg font-bold sm:font-medium text-xs sm:text-[13px] transition flex items-center justify-center gap-1.5 shadow-sm"
           >
             <Printer className="w-4 h-4 text-gray-600" /> Print
           </button>
@@ -834,7 +1152,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           <button
             type="button"
             onClick={handleClearForm}
-            className="flex-1 sm:flex-none px-5 py-3.5 sm:py-3 bg-white hover:bg-red-50 text-gray-700 hover:text-red-600 hover:border-red-300 border border-[#dee2e6] rounded-xl sm:rounded-lg font-bold sm:font-medium text-xs sm:text-[13px] transition flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 sm:flex-none px-4 py-3.5 sm:py-3 bg-white hover:bg-red-50 text-gray-700 hover:text-red-600 hover:border-red-300 border border-[#dee2e6] rounded-xl sm:rounded-lg font-bold sm:font-medium text-xs sm:text-[13px] transition flex items-center justify-center gap-1.5 shadow-sm"
           >
             <RotateCcw className="w-4 h-4" /> Clear
           </button>
@@ -845,30 +1163,84 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.1)] flex items-center gap-2.5 sm:hidden z-40 print:hidden">
         <button
           type="button"
-          onClick={() => {
-            if (!validateForm()) return;
-            setIsEmailModalOpen(true);
-          }}
-          className="flex-[1.5] py-3 px-3 bg-[#29a9e1] active:bg-[#1e7aaa] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition"
+          onClick={handleInitiateSubmit}
+          disabled={isSubmittingToWebhook}
+          className="flex-[1.5] py-3 px-3 bg-[#1e3a5f] active:bg-[#152e4d] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition disabled:opacity-75"
         >
-          <Mail className="w-4 h-4" /> ⚡ 1-Click Dispatch
+          {isSubmittingToWebhook ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin text-[#29a9e1]" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 text-[#29a9e1]" />
+              Submit Report
+            </>
+          )}
         </button>
         <button
           type="button"
           onClick={handleGenerateReport}
           disabled={generating}
-          className="flex-1 py-3 px-2 bg-[#1e3a5f] active:bg-[#152e4d] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-md active:scale-95 transition disabled:opacity-50"
+          className="flex-1 py-3 px-2 bg-[#1e7aaa] active:bg-[#166085] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-md active:scale-95 transition disabled:opacity-50"
         >
-          <Download className="w-3.5 h-3.5 text-[#29a9e1]" /> .docx Only
+          <Download className="w-3.5 h-3.5 text-white" /> .docx Only
         </button>
       </div>
 
+      {/* Requirement 2: Submit Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2.5 bg-[#e8f6fb] rounded-xl text-[#1a6b8a]">
+                <Send className="w-6 h-6 text-[#1a6b8a]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 leading-tight">
+                  Confirm Submission
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Power Automate & SharePoint Auto-Sync
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 leading-relaxed mb-6">
+              Submitting for <strong className="text-slate-900 font-mono">{cleanProjectId(projectId)}</strong> on the <strong className="text-slate-900">{market}</strong> sheet. If this project isn't on that sheet yet, it will be added as a new row.
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl font-semibold text-sm transition"
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                className="flex-1 py-2.5 px-4 bg-[#1e3a5f] hover:bg-[#152e4d] text-white rounded-xl font-semibold text-sm shadow-md transition flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4 text-[#29a9e1]" />
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Modal & 1-Click Dispatch Workflow */}
       <EmailModal
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
         data={currentReportData}
         onGenerateReport={handleGenerateReport}
+        onSubmitToSharePoint={submitToSharePoint}
         generating={generating}
+        submitting={isSubmittingToWebhook}
       />
 
       {/* Floating Toast Notification */}

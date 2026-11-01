@@ -8,7 +8,7 @@ export async function getStandaloneHtml(): Promise<string> {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>End of Day Shift Report — LSCG / Full Circle Fiber / ITG</title>
+  <title>End of Day Shift Report — ITG Communications</title>
   <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -328,7 +328,7 @@ export async function getStandaloneHtml(): Promise<string> {
         <div class="field"><label>Contractor name</label><input type="text" id="f-contractor" placeholder="e.g. Rocky Meek"></div>
       </div>
       <div class="field-grid grid-2">
-        <div class="field"><label>Vendor</label><div class="vendor-badge">LSCG / Full Circle Fiber / ITG</div></div>
+        <div class="field"><label>Vendor</label><div class="vendor-badge">ITG Communications</div></div>
         <div class="field"><label>Submitted by</label><input type="text" id="f-submitter" placeholder="Supervisor or foreman name"></div>
       </div>
     </div>
@@ -553,7 +553,7 @@ export async function getStandaloneHtml(): Promise<string> {
         project: document.getElementById('f-project').value,
         submittedBy: document.getElementById('f-submitter').value,
         contractor: document.getElementById('f-contractor').value,
-        vendor: 'LSCG / Full Circle Fiber / ITG',
+        vendor: 'ITG Communications',
         totalFootage: document.getElementById('f-total-footage').value,
         startAddress: document.getElementById('f-start-address').value,
         endAddress: document.getElementById('f-end-address').value,
@@ -728,7 +728,7 @@ export async function getStandaloneHtml(): Promise<string> {
                               spacing: { before: 40, after: 0 },
                               children: [
                                 new TextRun({
-                                  text: 'LSCG / Full Circle Fiber / ITG  —  Tillman Fiber',
+                                  text: 'ITG Communications  —  Tillman Fiber',
                                   bold: true,
                                   size: 14,
                                   color: GRAY
@@ -815,7 +815,7 @@ export async function getStandaloneHtml(): Promise<string> {
             sp(200),
 
             new Paragraph({ spacing: { before: 200, after: 0 }, border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'CCCCCC', space: 4 } },
-              children: [new TextRun({ text: 'Generated: ' + new Date().toLocaleString() + ' — LSCG / Full Circle Fiber / ITG — Tillman Fiber', size: 16, color: GRAY, italics: true })] })
+              children: [new TextRun({ text: 'Generated: ' + new Date().toLocaleString() + ' — ITG Communications — Tillman Fiber', size: 16, color: GRAY, italics: true })] })
           ]
         }]
       });

@@ -88,6 +88,11 @@ const sectionHeader = (text: string) =>
 const sp = (after = 100) => new Paragraph({ spacing: { after }, children: [] });
 
 export function getFilename(d: ShiftReportData): string {
+  const pId = d.projectId ? d.projectId.trim() : '';
+  const dateIso = d.date || new Date().toISOString().split('T')[0];
+  if (pId) {
+    return `EOS_Report_${pId}_${dateIso}.docx`;
+  }
   const contractor = d.contractor.trim() || 'Unknown';
   const project = d.project.trim() || '';
   let dateStr = d.date;
@@ -105,9 +110,22 @@ export function getFilename(d: ShiftReportData): string {
   return parts.join(' ') + '.docx';
 }
 
-export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob; filename: string }> {
+export async function generateDocxBase64(d: ShiftReportData, customFilename?: string): Promise<{ base64: string; filename: string }> {
+  const { blob, filename } = await generateDocxBlob(d, customFilename);
+  const buffer = await blob.arrayBuffer();
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+  return { base64, filename };
+}
+
+export async function generateDocxBlob(d: ShiftReportData, customFilename?: string): Promise<{ blob: Blob; filename: string }> {
   const logoBuffer = await getLogoBuffer();
-  const filename = getFilename(d);
+  const filename = customFilename || getFilename(d);
 
   // Format date nicely
   let dateDisplay = d.date || '—';
@@ -271,7 +289,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
                             spacing: { before: 40, after: 0 },
                             children: [
                               new TextRun({
-                                text: 'LSCG / Full Circle Fiber / ITG  —  Tillman Fiber',
+                                text: 'ITG Communications  —  Tillman Fiber',
                                 bold: true,
                                 size: 14,
                                 color: GRAY
@@ -465,7 +483,7 @@ export async function generateDocxBlob(d: ShiftReportData): Promise<{ blob: Blob
             border: { top: { style: BorderStyle.SINGLE, size: 2, color: 'CCCCCC', space: 4 } },
             children: [
               new TextRun({
-                text: `Generated: ${new Date().toLocaleString()} — LSCG / Full Circle Fiber / ITG — Tillman Fiber`,
+                text: `Generated: ${new Date().toLocaleString()} — ITG Communications — Tillman Fiber`,
                 size: 16,
                 color: GRAY,
                 italics: true

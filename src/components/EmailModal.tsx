@@ -17,7 +17,9 @@ interface EmailModalProps {
   onClose: () => void;
   data: ShiftReportData;
   onGenerateReport: () => Promise<void>;
+  onSubmitToSharePoint?: () => Promise<void>;
   generating: boolean;
+  submitting?: boolean;
 }
 
 export const EmailModal: React.FC<EmailModalProps> = ({
@@ -25,7 +27,9 @@ export const EmailModal: React.FC<EmailModalProps> = ({
   onClose,
   data,
   onGenerateReport,
-  generating
+  onSubmitToSharePoint,
+  generating,
+  submitting = false
 }) => {
   const [recipients, setRecipients] = useState('');
   const [copiedSubject, setCopiedSubject] = useState(false);
@@ -59,7 +63,9 @@ export const EmailModal: React.FC<EmailModalProps> = ({
     formattedDate = `${m}-${d}-${y}`;
   }
 
-  const subject = `${formattedDate} EOS AND REDLINE REPORT ${data.project || 'NO_PROJ'} ${
+  const projDisplay = data.projectId || data.project || 'NO_PROJ';
+  const marketDisplay = data.market ? `[${data.market}] ` : '';
+  const subject = `${formattedDate} EOS AND REDLINE REPORT ${marketDisplay}${projDisplay} ${
     data.contractor || 'NO_CONTRACTOR'
   }`.trim();
 
@@ -131,8 +137,14 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
   };
 
   const handle1ClickDispatch = async () => {
+    // 1. Download report (.docx)
     await onGenerateReport();
+    // 2. Open email client with subject & body
     handleMailto();
+    // 3. Submit to SharePoint via webhook
+    if (onSubmitToSharePoint) {
+      await onSubmitToSharePoint();
+    }
   };
 
   return (
@@ -264,11 +276,13 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
           <button
             type="button"
             onClick={handle1ClickDispatch}
-            disabled={generating}
+            disabled={generating || submitting}
             className="flex-[2] py-3.5 px-4 bg-[#29a9e1] hover:bg-[#1a6b8a] text-white rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition disabled:opacity-50 active:scale-[0.99]"
           >
             <Send className="w-4 h-4 animate-pulse" />
-            {generating ? 'Processing Report & Email...' : '⚡ 1-Click Dispatch (Download Report + Open Email)'}
+            {generating || submitting
+              ? 'Processing Dispatch (Report, Email & SharePoint)...'
+              : '⚡ 1-Click Dispatch (Download Report + Open Email + Submit to SharePoint)'}
           </button>
 
           <button

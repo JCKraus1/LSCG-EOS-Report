@@ -12,13 +12,45 @@ export interface MotRow {
   hours: string;
 }
 
+export interface EosQuantities {
+  drillFootage: number;
+  tobyBoxes: number;
+  daps: number;
+  handHoles: number;
+  fdh: number;
+}
+
+export interface EosPayload {
+  submissionId: string;
+  reportDate: string;
+  market: string;
+  projectId: string;
+  project: string;
+  vendor: string;
+  contractor: string;
+  submittedBy: string;
+  startAddress: string;
+  endAddress: string;
+  deviations: string;
+  quantities: EosQuantities;
+  footageByMethodText: string;
+  materialsSummaryText: string;
+  motSummaryText: string;
+  fileName: string;
+  fileBase64: string;
+}
+
 export interface ShiftReportData {
+  submissionId?: string;
   date: string;
+  market?: string;
+  projectId?: string;
   project: string;
   contractor: string;
   submittedBy: string;
   vendor: string;
   totalFootage: string;
+  quantities?: EosQuantities;
   startAddress?: string;
   endAddress?: string;
   activityType?: 'construction' | 'fiber';
@@ -42,6 +74,7 @@ export const MATERIAL_TYPES = [
   '2 Way HEX Hand Dig',
   'Toby Boxes',
   'DAP PITs',
+  'Hand Holes',
   'Micro Splices',
   'FDH',
   'Ground Rod',
@@ -57,6 +90,7 @@ export const FIBER_MATERIAL_TYPES = [
   '48ct Fiber',
   '96ct Fiber',
   '144ct Fiber',
+  '288ct Fiber',
   'Tracer Wire',
   'Mule Tape',
   'Wreck Out',

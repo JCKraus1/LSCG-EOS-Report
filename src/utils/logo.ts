@@ -1,7 +1,7 @@
 /**
- * Generates or fetches the exact crisp PNG logo for LSCG / Full Circle Fiber / ITG.
+ * Generates or fetches the exact crisp PNG logo for ITG Communications.
  * Prioritizes loading `/logo.png` if uploaded by the user into the public folder.
- * Falls back to a 100% accurate Canvas recreation of the official LSCG icon.
+ * Falls back to a 100% accurate Canvas recreation of the official logo icon.
  */
 
 function drawLscgLogo(ctx: CanvasRenderingContext2D) {

@@ -1,0 +1,6 @@
+{
+  "summary":  "Verification and implementation plan for the Power Automate Webhook and SharePoint integration. Covers the config file, Market dropdown, Project ID validation and recent history datalist, five key quantity inputs, submissionId tracking, exact JSON payload creation with Base64 DOCX attachment, 120s timeout POST, response handling, and offline queue in IndexedDB ('eosSync' / 'queue') with retry lifecycle and UI sync indicators.",
+  "updatedAt":  "2026-11-01T19:43:33.103952074Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
