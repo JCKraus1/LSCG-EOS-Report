@@ -88,25 +88,27 @@ const sectionHeader = (text: string) =>
 const sp = (after = 100) => new Paragraph({ spacing: { after }, children: [] });
 
 export function getFilename(d: ShiftReportData): string {
-  const pId = d.projectId ? d.projectId.trim() : '';
-  const dateIso = d.date || new Date().toISOString().split('T')[0];
-  if (pId) {
-    return `EOS_Report_${pId}_${dateIso}.docx`;
-  }
+  const pId = (d.projectId || d.project || '').trim();
   const contractor = d.contractor.trim() || 'Unknown';
-  const project = d.project.trim() || '';
+
   let dateStr = d.date;
-  if (d.date) {
+  if (d.date && d.date.includes('-')) {
     const [y, m, day] = d.date.split('-');
-    dateStr = `${parseInt(m, 10)}-${parseInt(day, 10)}-${y}`;
+    // Format MM-DD-YYYY or M-D-YYYY
+    const mm = String(parseInt(m, 10)).padStart(2, '0');
+    const dd = String(parseInt(day, 10)).padStart(2, '0');
+    dateStr = `${mm}-${dd}-${y}`;
   } else {
     const now = new Date();
-    dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    dateStr = `${mm}-${dd}-${now.getFullYear()}`;
   }
-  const reportName = d.activityType === 'fiber' ? 'Fiber End Of Day Shift Report' : 'End Of Day Shift Report';
-  const parts = [dateStr, reportName];
-  if (project) parts.push(project);
-  parts.push(contractor);
+
+  const parts = [dateStr, 'EOS AND REDLINE REPORT'];
+  if (pId) parts.push(pId);
+  if (contractor) parts.push(contractor);
+
   return parts.join(' ') + '.docx';
 }
 

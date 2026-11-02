@@ -137,13 +137,18 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
   };
 
   const handle1ClickDispatch = async () => {
-    // 1. Download report (.docx)
-    await onGenerateReport();
-    // 2. Open email client with subject & body
-    handleMailto();
-    // 3. Submit to SharePoint via webhook
-    if (onSubmitToSharePoint) {
-      await onSubmitToSharePoint();
+    try {
+      // 1. Download report (.docx)
+      await onGenerateReport();
+      // 2. Open email client with subject & body
+      handleMailto();
+      // 3. Submit to SharePoint via webhook
+      if (onSubmitToSharePoint) {
+        await onSubmitToSharePoint();
+      }
+    } finally {
+      // Close the modal window so it does not stay open
+      onClose();
     }
   };
 

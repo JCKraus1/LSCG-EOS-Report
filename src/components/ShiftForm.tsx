@@ -18,7 +18,7 @@ import {
   Send
 } from 'lucide-react';
 import { ShiftReportData, ActivityRow, MotRow, CONSTRUCTION_MATERIAL_TYPES, FIBER_MATERIAL_TYPES, ACTIVITY_DESCRIPTIONS, MOT_ACTIVITIES, MOT_CODES, EosPayload, EosQuantities } from '../types';
-import { generateDocxBlob, generateDocxBase64 } from '../utils/docxGenerator';
+import { generateDocxBlob, generateDocxBase64, getFilename } from '../utils/docxGenerator';
 import { getLogoBase64 } from '../utils/logo';
 import { saveDraftToStorage, loadDraftFromStorage, clearDraftFromStorage } from '../utils/indexedDb';
 import { MARKETS, Market } from '../config';
@@ -395,7 +395,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   const buildEosPayload = async (): Promise<EosPayload> => {
     const cleanedId = cleanProjectId(projectId);
     const reportDateIso = date || new Date().toISOString().split('T')[0];
-    const fileName = `EOS_Report_${cleanedId}_${reportDateIso}.docx`;
+    const fileName = getFilename(currentReportData);
 
     // 1. Generate DOCX as raw Base64 (no "data:" prefix)
     const { base64 } = await generateDocxBase64(currentReportData, fileName);
