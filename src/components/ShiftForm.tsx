@@ -184,7 +184,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         date,
         market,
         projectId,
-        project: projectId || 'Tillman Fiber',
+        project: projectId || '',
         contractor,
         submittedBy,
         drillFootage,
