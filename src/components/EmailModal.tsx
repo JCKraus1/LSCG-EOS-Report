@@ -65,7 +65,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
 
   const projDisplay = data.projectId || data.project || 'NO_PROJ';
   const marketDisplay = data.market ? `[${data.market}] ` : '';
-  const subject = `${formattedDate} EOS AND REDLINE REPORT ${marketDisplay}${projDisplay} ${
+  const subject = `${formattedDate} End Of Day Shift Report ${marketDisplay}${projDisplay} ${
     data.contractor || 'NO_CONTRACTOR'
   }`.trim();
 

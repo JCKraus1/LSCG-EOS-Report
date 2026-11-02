@@ -105,7 +105,7 @@ export function getFilename(d: ShiftReportData): string {
     dateStr = `${mm}-${dd}-${now.getFullYear()}`;
   }
 
-  const parts = [dateStr, 'EOS AND REDLINE REPORT'];
+  const parts = [dateStr, 'End Of Day Shift Report'];
   if (pId) parts.push(pId);
   if (contractor) parts.push(contractor);
 
