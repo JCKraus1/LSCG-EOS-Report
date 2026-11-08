@@ -33,7 +33,11 @@ import {
   enqueueReport,
   initQueueEngine,
   subscribeQueueCount,
-  processQueue
+  processQueue,
+  cleanExpiredRecentSubmissions,
+  recordRecentSubmission,
+  findRecentDuplicateSubmission,
+  formatSentAtTime
 } from '../utils/syncQueue';
 
 interface ShiftFormProps {
@@ -57,6 +61,25 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   const [queueCount, setQueueCount] = useState<number>(0);
   const [isSubmittingToWebhook, setIsSubmittingToWebhook] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Repeat warning state (Modal 1)
+  const [repeatWarning, setRepeatWarning] = useState<{
+    show: boolean;
+    projectId: string;
+    market: string;
+    contractor: string;
+    sentAtTime: string;
+  } | null>(null);
+
+  // Submitted screen state (shows after successful send)
+  const [submittedScreenData, setSubmittedScreenData] = useState<{
+    projectId: string;
+    market: string;
+    contractor: string;
+    reportDate: string;
+    quantities: EosQuantities;
+    itemId: string;
+  } | null>(null);
 
   // Form State
   const [submissionId, setSubmissionId] = useState<string>(() => generateSubmissionId());
@@ -125,6 +148,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         year: 'numeric'
       })
     );
+
+    // Remove entries older than 6 hours whenever the app loads (Requirement 2)
+    cleanExpiredRecentSubmissions();
 
     // Offline Queue subscription & auto-retry engine
     const cleanupQueueEngine = initQueueEngine();
@@ -474,8 +500,29 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       if (result.success) {
         const itemMsg = result.itemId ? ` (item #${result.itemId})` : '';
         showToast(`Saved to SharePoint${itemMsg}`);
-        // Reset form and generate fresh submissionId on success
-        handleClearForm();
+
+        // 2. Remember recent submissions in localStorage under "eosRecentSubmissions" (Requirement 2)
+        recordRecentSubmission({
+          projectId: payload.projectId,
+          market: payload.market,
+          contractor: payload.contractor,
+          reportDate: payload.reportDate,
+          sentAt: new Date().toISOString()
+        });
+
+        // 1. After successful send: DO NOT close window or reset form automatically.
+        // Show "Submitted" screen (Requirement 1)
+        setSubmittedScreenData({
+          projectId: payload.projectId,
+          market: payload.market,
+          contractor: payload.contractor,
+          reportDate: payload.reportDate,
+          quantities: payload.quantities,
+          itemId: result.itemId ? String(result.itemId) : (result.duplicate ? 'Duplicate' : 'Verified')
+        });
+
+        // Close email modal if it was open so the Submitted screen is visible
+        setIsEmailModalOpen(false);
         return true;
       } else {
         // Enqueue offline in IndexedDB
@@ -499,19 +546,67 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   };
 
   /**
-   * Tapping Submit Report button validates the form and opens the Email Modal.
+   * Tapping Submit Report button:
+   * 1. Validates the form
+   * 2. Checks eosRecentSubmissions for an entry with same projectId, market, contractor and reportDate in last 6h
+   * 3. If duplicate found -> show repeat warning modal
+   * 4. If no duplicate -> continue to normal confirmation modal
    */
   const handleInitiateSubmit = () => {
     if (!validateForm()) return;
+
+    const cleanedId = cleanProjectId(projectId);
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    // Check for repeat in last 6 hours
+    const duplicateCheck = findRecentDuplicateSubmission(cleanedId, market, contractor, targetDate);
+    if (duplicateCheck.found && duplicateCheck.entry) {
+      setRepeatWarning({
+        show: true,
+        projectId: cleanedId,
+        market,
+        contractor: contractor.trim(),
+        sentAtTime: formatSentAtTime(duplicateCheck.entry.sentAt)
+      });
+      return;
+    }
+
+    // No repeat found -> continue to normal confirmation
+    setShowConfirmModal(true);
+  };
+
+  /**
+   * Action when continuing from Repeat Warning to normal confirmation
+   */
+  const handleContinueFromWarning = () => {
+    setRepeatWarning(null);
+    setShowConfirmModal(true);
+  };
+
+  /**
+   * Executed when the user clicks "Confirm" in the confirmation modal.
+   * Opens the Email Modal / Dispatch flow (or direct dispatch).
+   */
+  const handleConfirmSubmit = async () => {
+    setShowConfirmModal(false);
     setIsEmailModalOpen(true);
   };
 
   /**
-   * Executed when the user clicks "Confirm" in the confirmation modal
+   * Direct submit from confirmation modal if user wants 1-click submit directly
    */
-  const handleConfirmSubmit = async () => {
+  const handleConfirmAndDirectSubmit = async () => {
     setShowConfirmModal(false);
     await submitToSharePoint();
+  };
+
+  /**
+   * Resets form and creates a new submissionId (Only called by "Start a new EOS" button)
+   */
+  const handleStartNewEos = () => {
+    setSubmittedScreenData(null);
+    handleClearForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleGenerateReport = async () => {
@@ -1189,6 +1284,49 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         </button>
       </div>
 
+      {/* Requirement 3: Warn Before a Repeat Modal */}
+      {repeatWarning && repeatWarning.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-amber-300">
+            <div className="flex items-start gap-3.5 mb-4">
+              <div className="p-3 bg-amber-100 rounded-xl text-amber-700 flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 leading-tight">
+                  Previous Submission Detected
+                </h3>
+                <p className="text-xs text-amber-700 font-medium mt-0.5">
+                  Recent shift report found within the last 6 hours
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-sm text-slate-800 leading-relaxed mb-6">
+              An EOS for <strong className="font-mono text-slate-950 font-bold">{repeatWarning.projectId}</strong> (<strong className="text-slate-950 font-semibold">{repeatWarning.market}</strong>, <strong className="text-slate-950 font-semibold">{repeatWarning.contractor}</strong>) was already sent at <strong className="text-slate-950 font-semibold">{repeatWarning.sentAtTime}</strong>. If you need to fix a mistake, contact the policing team instead of resubmitting. If this is a separate shift, you can still submit, but it will be held for review.
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setRepeatWarning(null)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-[0.99] text-slate-800 border border-slate-300 rounded-xl font-bold text-sm transition text-center shadow-xs"
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                onClick={handleContinueFromWarning}
+                className="flex-1 py-3 px-4 bg-[#1e3a5f] hover:bg-[#152e4d] active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2"
+              >
+                Submit for review
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Requirement 2: Submit Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
@@ -1227,6 +1365,143 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
                 <CheckCircle className="w-4 h-4 text-[#29a9e1]" />
                 Confirm
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Requirement 1: Submitted Screen (Only "Start a new EOS" resets form and generates fresh submissionId) */}
+      {submittedScreenData && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto flex flex-col">
+            {/* Header Banner */}
+            <div className="bg-emerald-600 p-6 text-white text-center flex flex-col items-center justify-center relative">
+              <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center mb-3 shadow-inner">
+                <CheckCircle className="w-9 h-9 text-white" />
+              </div>
+              <h2 className="text-2xl font-black tracking-tight">Submitted</h2>
+              <p className="text-sm font-semibold text-emerald-100 mt-1">
+                Saved to SharePoint (item #{submittedScreenData.itemId})
+              </p>
+            </div>
+
+            {/* Content Details */}
+            <div className="p-6 sm:p-8 space-y-6">
+              {/* Core Information Grid */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-3.5">
+                  Shift Report Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-slate-500 font-medium">Project ID</span>
+                    <span className="font-mono font-bold text-slate-900 text-base">
+                      {submittedScreenData.projectId}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-slate-500 font-medium">Market</span>
+                    <span className="font-bold text-slate-900 text-base">
+                      {submittedScreenData.market}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-slate-500 font-medium">Contractor</span>
+                    <span className="font-semibold text-slate-900">
+                      {submittedScreenData.contractor}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-slate-500 font-medium">Shift Date</span>
+                    <span className="font-semibold text-slate-900 font-mono">
+                      {submittedScreenData.reportDate}
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:col-span-2 pt-2 border-t border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-medium">SharePoint Item Number</span>
+                    <span className="font-mono font-extrabold text-emerald-700 text-base">
+                      item #{submittedScreenData.itemId}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Five Quantities Section */}
+              <div className="space-y-2.5">
+                <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-[#1e3a5f] flex items-center justify-between">
+                  <span>Reported SOW Quantities</span>
+                  <span className="text-slate-400 font-normal lowercase">(sent to sheet)</span>
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-2">
+                  <div className="p-3 bg-[#e8f6fb] border border-[#b3dff0] rounded-xl flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] font-bold uppercase text-[#1a6b8a] tracking-wider">
+                      Drill Footage
+                    </span>
+                    <span className="text-lg font-black text-[#1e3a5f] mt-0.5">
+                      {submittedScreenData.quantities.drillFootage}
+                      <span className="text-xs font-semibold ml-0.5 text-[#1a6b8a]">ft</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                      Toby Boxes
+                    </span>
+                    <span className="text-lg font-black text-slate-900 mt-0.5">
+                      {submittedScreenData.quantities.tobyBoxes}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                      DAPs
+                    </span>
+                    <span className="text-lg font-black text-slate-900 mt-0.5">
+                      {submittedScreenData.quantities.daps}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                      Hand Holes
+                    </span>
+                    <span className="text-lg font-black text-slate-900 mt-0.5">
+                      {submittedScreenData.quantities.handHoles}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center text-center col-span-2 sm:col-span-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                      FDH
+                    </span>
+                    <span className="text-lg font-black text-slate-900 mt-0.5">
+                      {submittedScreenData.quantities.fdh}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons: "Start a new EOS" is the ONLY button that resets form and generates fresh submissionId */}
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={handleStartNewEos}
+                  className="flex-[2] py-4 px-6 bg-[#1e3a5f] hover:bg-[#152e4d] text-white rounded-2xl font-black text-base shadow-lg hover:shadow-xl active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-5 h-5 text-[#29a9e1]" />
+                  Start a new EOS
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateReport}
+                  disabled={generating}
+                  className="flex-1 py-4 px-4 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <Download className="w-4 h-4 text-slate-600" />
+                  {generating ? 'Downloading...' : 'Download .docx copy'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -4,6 +4,15 @@ import { EosPayload } from '../types';
 export const QUEUE_DB_NAME = 'eosSync';
 export const QUEUE_STORE_NAME = 'queue';
 export const RECENT_PROJECTS_KEY = 'eosRecentProjects';
+export const RECENT_SUBMISSIONS_KEY = 'eosRecentSubmissions';
+
+export interface RecentSubmissionEntry {
+  projectId: string;
+  market: string;
+  contractor: string;
+  reportDate: string;
+  sentAt: string; // ISO timestamp
+}
 
 export interface SendResult {
   success: boolean;
@@ -328,3 +337,94 @@ export function generateSubmissionId(): string {
   }
   return 'sub-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
 }
+
+/**
+ * Removes entries older than 6 hours whenever the app loads or checks submissions
+ * Key: "eosRecentSubmissions"
+ */
+export function cleanExpiredRecentSubmissions(): RecentSubmissionEntry[] {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = localStorage.getItem(RECENT_SUBMISSIONS_KEY);
+    if (!raw) return [];
+    const entries: RecentSubmissionEntry[] = JSON.parse(raw);
+    if (!Array.isArray(entries)) {
+      localStorage.removeItem(RECENT_SUBMISSIONS_KEY);
+      return [];
+    }
+
+    const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+    const valid = entries.filter((e) => {
+      const time = new Date(e.sentAt).getTime();
+      return !isNaN(time) && time > sixHoursAgo;
+    });
+
+    localStorage.setItem(RECENT_SUBMISSIONS_KEY, JSON.stringify(valid));
+    return valid;
+  } catch (err) {
+    console.warn('Failed to clean expired recent submissions:', err);
+    return [];
+  }
+}
+
+/**
+ * Saves {projectId, market, contractor, reportDate, sentAt} in localStorage
+ * under the key "eosRecentSubmissions" after each successful send.
+ */
+export function recordRecentSubmission(entry: RecentSubmissionEntry): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const valid = cleanExpiredRecentSubmissions();
+    // Prepend new entry
+    valid.unshift(entry);
+    localStorage.setItem(RECENT_SUBMISSIONS_KEY, JSON.stringify(valid));
+  } catch (err) {
+    console.warn('Failed to record recent submission:', err);
+  }
+}
+
+/**
+ * Check eosRecentSubmissions for an entry with the same projectId, market,
+ * contractor and reportDate sent in the last 6 hours.
+ */
+export function findRecentDuplicateSubmission(
+  projectId: string,
+  market: string,
+  contractor: string,
+  reportDate: string
+): { found: boolean; entry?: RecentSubmissionEntry } {
+  const activeEntries = cleanExpiredRecentSubmissions();
+  const cleanedId = cleanProjectId(projectId);
+  const targetContractor = contractor.trim().toLowerCase();
+
+  const match = activeEntries.find((e) => {
+    return (
+      cleanProjectId(e.projectId) === cleanedId &&
+      e.market.toLowerCase() === market.toLowerCase() &&
+      e.contractor.trim().toLowerCase() === targetContractor &&
+      e.reportDate === reportDate
+    );
+  });
+
+  if (match) {
+    return { found: true, entry: match };
+  }
+  return { found: false };
+}
+
+/**
+ * Formats the timestamp for the repeat warning modal (e.g. "2:45 PM")
+ */
+export function formatSentAtTime(isoStr: string): string {
+  try {
+    const date = new Date(isoStr);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return 'recently';
+  }
+}
+
