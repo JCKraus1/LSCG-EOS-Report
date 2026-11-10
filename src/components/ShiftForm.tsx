@@ -170,7 +170,8 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           draft.activities?.some((a: any) => a.description || a.quantity) ||
           draft.motItems?.some((m: any) => m.activity || m.hours))
       ) {
-        if (draft.submissionId) setSubmissionId(draft.submissionId);
+        // Always clear/generate a fresh unique submission ID on load to prevent duplicates
+        setSubmissionId(generateSubmissionId());
         setDate(draft.date || now.toISOString().split('T')[0]);
         setMarket((draft.market as Market) || '');
         setProjectId(draft.projectId || draft.project || '');
@@ -418,13 +419,14 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   /**
    * Builds the exact JSON payload matching Requirement 6
    */
-  const buildEosPayload = async (): Promise<EosPayload> => {
+  const buildEosPayload = async (explicitSubmissionId?: string): Promise<EosPayload> => {
+    const activeSubmissionId = explicitSubmissionId || generateSubmissionId();
     const cleanedId = cleanProjectId(projectId);
     const reportDateIso = date || new Date().toISOString().split('T')[0];
-    const fileName = getFilename(currentReportData);
+    const fileName = getFilename({ ...currentReportData, submissionId: activeSubmissionId });
 
     // 1. Generate DOCX as raw Base64 (no "data:" prefix)
-    const { base64 } = await generateDocxBase64(currentReportData, fileName);
+    const { base64 } = await generateDocxBase64({ ...currentReportData, submissionId: activeSubmissionId }, fileName);
 
     // 2. Footage by method text summary
     const footageLines = activities
@@ -462,7 +464,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       .join('\n');
 
     return {
-      submissionId,
+      submissionId: activeSubmissionId,
       reportDate: reportDateIso,
       market,
       projectId: cleanedId,
@@ -483,13 +485,18 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   };
 
   /**
-   * Internal submission to Power Automate / SharePoint
+   * Internal submission to Power Automate / SharePoint.
+   * Clears and creates a fresh unique submissionId EVERY time dispatch is clicked.
    */
   const submitToSharePoint = async (): Promise<boolean> => {
     setIsSubmittingToWebhook(true);
 
+    // Clear old submission ID and generate a fresh unique UUID on every dispatch click
+    const dispatchSubmissionId = generateSubmissionId();
+    setSubmissionId(dispatchSubmissionId);
+
     try {
-      const payload = await buildEosPayload();
+      const payload = await buildEosPayload(dispatchSubmissionId);
 
       // Remember Project ID for this market
       recordRecentProjectId(payload.market, payload.projectId);
@@ -523,22 +530,29 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
 
         // Close email modal if it was open so the Submitted screen is visible
         setIsEmailModalOpen(false);
+
+        // Clear and rotate to a fresh submission ID for next action
+        setSubmissionId(generateSubmissionId());
         return true;
       } else {
-        // Enqueue offline in IndexedDB
+        // Enqueue offline in IndexedDB with this dispatch's unique submissionId
         await enqueueReport(payload);
         showToast('Saved offline. Will send automatically.', true);
+        // Rotate to a fresh submission ID for next action
+        setSubmissionId(generateSubmissionId());
         return false;
       }
     } catch (err: any) {
       console.error('Submit error:', err);
       try {
-        const payload = await buildEosPayload();
+        const payload = await buildEosPayload(dispatchSubmissionId);
         await enqueueReport(payload);
         showToast('Saved offline. Will send automatically.', true);
       } catch {
         showToast('Error preparing submission. Please try again.', true);
       }
+      // Rotate to a fresh submission ID for next action
+      setSubmissionId(generateSubmissionId());
       return false;
     } finally {
       setIsSubmittingToWebhook(false);
