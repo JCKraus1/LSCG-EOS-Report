@@ -164,7 +164,7 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
             <div>
               <h2 className="text-lg font-bold">Submit Report</h2>
               <p className="text-xs text-cyan-200">
-                Persistent recipients & automated LSCG template
+                Persistent recipients & automated ITG template
               </p>
             </div>
           </div>
@@ -282,7 +282,7 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
             type="button"
             onClick={handle1ClickDispatch}
             disabled={generating || submitting}
-            className="flex-[2] py-3.5 px-4 bg-[#29a9e1] hover:bg-[#1a6b8a] text-white rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition disabled:opacity-50 active:scale-[0.99]"
+            className="w-full py-3.5 px-4 bg-[#29a9e1] hover:bg-[#1a6b8a] text-white rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition disabled:opacity-50 active:scale-[0.99]"
           >
             <Send className="w-4 h-4 animate-pulse" />
             {generating || submitting
@@ -290,6 +290,7 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
               : '⚡ 1-Click Dispatch (Download Report + Open Email + Submit to SharePoint)'}
           </button>
 
+          {/* Hidden from view per user request; underlying code preserved for future use
           <button
             type="button"
             onClick={onGenerateReport}
@@ -300,6 +301,7 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
             <Download className="w-3.5 h-3.5 text-[#29a9e1]" />
             {generating ? '...' : 'Only Download .docx'}
           </button>
+          */}
         </div>
       </div>
     </div>

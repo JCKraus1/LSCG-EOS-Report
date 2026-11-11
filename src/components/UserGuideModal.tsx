@@ -23,7 +23,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
       <!DOCTYPE html>
       <html>
         <head>
-          <title>LSCG Daily Shift Report - Team Training & User Guide</title>
+          <title>ITG Daily Shift Report - Team Training & User Guide</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
             
@@ -198,13 +198,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         <body>
           <div class="header-container">
             <div>
-              <div class="logo-placeholder">LSCG GROUP</div>
+              <div class="logo-placeholder">ITG COMMUNICATIONS</div>
               <h1>Daily Shift Report</h1>
               <p class="subtitle">Field Operations & Foreman Training Guide</p>
             </div>
             <div class="doc-metadata">
               <div> Tillman Fiber Project </div>
-              <div> Document Ref: LSCG-EOD-01 </div>
+              <div> Document Ref: ITG-EOD-01 </div>
               <div> Version 2.1 • July 2026 </div>
             </div>
           </div>
@@ -212,7 +212,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           ${contentHtml}
           
           <div class="footer">
-            LSCG Daily Shift Report Utility • Proprietary & Confidential • Field Training Resource
+            ITG Daily Shift Report Utility • Proprietary & Confidential • Field Training Resource
           </div>
 
           <script>
@@ -239,7 +239,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold">Team User Guide & Training Manual</h3>
-              <p className="text-xs text-blue-200">Official companion document for LSCG End of Day reporting</p>
+              <p className="text-xs text-blue-200">Official companion document for ITG End of Day reporting</p>
             </div>
           </div>
           <button
@@ -275,7 +275,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             {/* Guide Section 1 */}
             <h2 className="text-xl sm:text-2xl font-black text-[#1e3a5f] mt-2 mb-4 border-b-2 border-gray-100 pb-2">1. System Overview</h2>
             <p>
-              The <strong>LSCG Daily Shift Report Application</strong> is a responsive full-stack platform built to capture, persist, format, and dispatch shift metrics for the <strong>Tillman Fiber project</strong>. Foremen, engineers, and subcontractors use this utility to log concrete achievements, fiber stringing, Maintenance of Traffic (MOT) schedules, and unexpected site deviations.
+              The <strong>ITG Daily Shift Report Application</strong> is a responsive full-stack platform built to capture, persist, format, and dispatch shift metrics for the <strong>Tillman Fiber project</strong>. Foremen, engineers, and subcontractors use this utility to log concrete achievements, fiber stringing, Maintenance of Traffic (MOT) schedules, and unexpected site deviations.
             </p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4 no-print">
@@ -299,6 +299,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               <div className="tip-title">⚡ Offline-First Resilience (Auto-Save)</div>
               <p className="tip-body">
                 The application runs on a local client database. Every character typed in the form is instantly cached in <strong>IndexedDB</strong>. If your tablet battery dies, your browser tab refreshes, or your internet drops, all logged work remains safely stored. The app retrieves your draft immediately upon relaunch.
+              </p>
+            </div>
+
+            <div className="tip-box" style={{ borderLeftColor: '#1e3a5f', backgroundColor: '#eef2f7' }}>
+              <div className="tip-title" style={{ color: '#1e3a5f' }}>🔄 6-Hour Auto-Reset & Version Sync</div>
+              <p className="tip-body">
+                To guarantee all field crews are running the latest app version with up-to-date validation rules, the system automatically checks session age and forces a clean reset every 6 hours (or when re-opening a tab kept active in the background). In-progress drafts are auto-saved to your device before reload so no data is ever lost.
               </p>
             </div>
 
@@ -351,7 +358,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <br />
             <h3 className="text-base sm:text-lg font-extrabold text-[#1e7aaa] mt-6 mb-2">Section 2.4: Maintenance of Traffic (MOT) Tracker</h3>
             <p>
-              LSCG requires complete recording of all traffic control assets and flaggers deployed.
+              ITG requires complete recording of all traffic control assets and flaggers deployed.
             </p>
             <table>
               <thead>
@@ -413,7 +420,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <ul>
               <li>
                 <strong>Generate Word Report (.docx):</strong> 
-                Compiles the form into a beautifully formatted LSCG Daily Report document (.docx) directly on your device. All tables, metadata, and fonts are built client-side. No internet required.
+                Compiles the form into a beautifully formatted ITG Daily Report document (.docx) directly on your device. All tables, metadata, and fonts are built client-side. No internet required.
               </li>
               <li>
                 <strong>Submit Report (Email Dispatcher):</strong> 
@@ -433,7 +440,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <div className="tip-box">
               <div className="tip-title">💡 Compliance Reminder</div>
               <p className="tip-body">
-                LSCG guidelines mandate submitting EOS reports everyday upon shift completion. Make sure addresses and total footages align with your asbuilt / redline report to prevent billing disputes.
+                ITG guidelines mandate submitting EOS reports everyday upon shift completion. Make sure addresses and total footages align with your asbuilt / redline report to prevent billing disputes.
               </p>
             </div>
           </div>

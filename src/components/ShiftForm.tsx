@@ -39,6 +39,11 @@ import {
   findRecentDuplicateSubmission,
   formatSentAtTime
 } from '../utils/syncQueue';
+import {
+  CURRENT_APP_VERSION,
+  initSessionRefreshGuard,
+  forceAppReload
+} from '../utils/versionCheck';
 
 interface ShiftFormProps {
   onOpenHtmlModal: () => void;
@@ -103,6 +108,8 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
 
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [motItems, setMotItems] = useState<MotRow[]>([]);
+
+  const currentReportDataRef = React.useRef<ShiftReportData | null>(null);
 
   const showToast = (msg: string, error = false) => {
     setToast({ show: true, msg, error });
@@ -196,9 +203,18 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       }
     });
 
+    // 6-Hour Session Expiration & Version Refresh Guard
+    // Forces a clean cache-busting reload every 6 hours or upon newer deployment, auto-saving draft first
+    const cleanupVersionGuard = initSessionRefreshGuard(async () => {
+      if (currentReportDataRef.current) {
+        await saveDraftToStorage(currentReportDataRef.current);
+      }
+    });
+
     return () => {
       cleanupQueueEngine();
       unsubscribeCount();
+      cleanupVersionGuard();
     };
   }, []);
 
@@ -383,6 +399,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     signature,
     supervisor
   };
+  currentReportDataRef.current = currentReportData;
 
   const validateForm = () => {
     const errs: { [key: string]: boolean } = {};
@@ -670,6 +687,19 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               ⚡ Auto-Save {lastAutoSaved ? `(Saved ${lastAutoSaved})` : 'Active'}
             </span>
+            <button
+              type="button"
+              onClick={() => forceAppReload('User requested manual version check', async () => {
+                if (currentReportDataRef.current) {
+                  await saveDraftToStorage(currentReportDataRef.current);
+                }
+              })}
+              title="Click to check for latest updates immediately. (App also automatically resets every 6 hours)"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 shadow-2xs transition active:scale-95 cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3 text-[#1e7aaa]" />
+              v{CURRENT_APP_VERSION} (6h Auto-Reset Active)
+            </button>
           </div>
           <h1 className="text-base sm:text-lg font-bold text-[#666e75]">End of Day Shift Report</h1>
           <p className="text-xs text-[#6c757d] mt-0.5">Tillman Fiber</p>
@@ -1220,6 +1250,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
 
       {/* Form Footer Action Buttons (Not in Print) */}
       <div className="max-w-[860px] mx-auto flex flex-col sm:flex-row gap-3.5 sm:gap-3 print:hidden mb-6">
+        {/* Hidden from view per user request; underlying code preserved for future use
         <button
           type="button"
           onClick={handleGenerateReport}
@@ -1229,6 +1260,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           <Download className="w-4 h-4" />
           {generating ? 'Generating .docx...' : 'Generate Word Report (.docx)'}
         </button>
+        */}
 
         <button
           type="button"
@@ -1274,7 +1306,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           type="button"
           onClick={handleInitiateSubmit}
           disabled={isSubmittingToWebhook}
-          className="flex-[1.5] py-3 px-3 bg-[#1e3a5f] active:bg-[#152e4d] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition disabled:opacity-75"
+          className="w-full py-3 px-3 bg-[#1e3a5f] active:bg-[#152e4d] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition disabled:opacity-75"
         >
           {isSubmittingToWebhook ? (
             <>
@@ -1288,6 +1320,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
             </>
           )}
         </button>
+        {/* Hidden from view per user request; underlying code preserved for future use
         <button
           type="button"
           onClick={handleGenerateReport}
@@ -1296,6 +1329,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         >
           <Download className="w-3.5 h-3.5 text-white" /> .docx Only
         </button>
+        */}
       </div>
 
       {/* Requirement 3: Warn Before a Repeat Modal */}
