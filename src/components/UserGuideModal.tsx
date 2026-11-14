@@ -205,7 +205,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <div class="doc-metadata">
               <div> Tillman Fiber Project </div>
               <div> Document Ref: ITG-EOD-01 </div>
-              <div> Version 2.1 • July 2026 </div>
+              <div> Version 2.5 • November 2026 </div>
             </div>
           </div>
           
@@ -324,12 +324,12 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </p>
             <ul>
               <li><strong>Date <code>*</code>:</strong> The precise calendar day the work was completed.</li>
-              <li><strong>Project # <code>*</code>:</strong> The unique project identifier (e.g., <code>TF-2026-01</code>).</li>
-              <li><strong>Contractor Name <code>*</code>:</strong> Name of the primary contractor/foreman authorizing the ledger.</li>
-              <li><strong>Submitted By <code>*</code>:</strong> The individual drafting the report (your email is prepopulated by default).</li>
-              <li><strong>Vendor <code>*</code>:</strong> Subcontracting firm or crew vendor designation.</li>
-              <li><strong>Total Footage <code>*</code>:</strong> Cumulative linear footage completed during the shift.</li>
-              <li><strong>Addresses (Start / End):</strong> Optional geographic markers indicating the physical span of the shift work.</li>
+              <li><strong>Market <code>*</code>:</strong> Select the project market (<code>Clearwater</code>, <code>Pinellas</code>, <code>Manatee</code>, <code>Fort Myers</code>, <code>Port Charlotte</code>, <code>Kissimmee</code>, or <code>Miami</code>).</li>
+              <li><strong>Project ID <code>*</code>:</strong> The unique project identifier (e.g., <code>BHCD-FPW-03-E</code>). Automatically formats to uppercase with no spaces and remembers recent IDs per market.</li>
+              <li><strong>Contractor Name <code>*</code>:</strong> Select an approved contractor from the searchable dropdown list, or type a custom contractor name if not listed. Selecting a contractor from the list automatically adds their associated contact emails to your email recipients upon dispatch.</li>
+              <li><strong>Vendor:</strong> Pre-configured as <code>ITG Communications</code>.</li>
+              <li><strong>Submitted By <code>*</code>:</strong> Name of the supervisor or foreman drafting the report.</li>
+              <li><strong>Total Drill Footage &amp; Addresses:</strong> Entered in the Construction/Fiber EOS section along with live-counted SOW items (<code>Toby Boxes</code>, <code>DAPs</code>, <code>Hand Holes</code>, and <code>FDH</code>) and optional Start/End addresses.</li>
             </ul>
 
             <br />
@@ -414,17 +414,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <br />
 
             {/* Guide Section 3 */}
-            <h2 className="text-xl sm:text-2xl font-black text-[#1e3a5f] mt-8 mb-4 border-b-2 border-gray-100 pb-2">3. Document Exports & Dispatch</h2>
-            <p>Once the form is filled out, use one of the four action commands to process the file:</p>
+            <h2 className="text-xl sm:text-2xl font-black text-[#1e3a5f] mt-8 mb-4 border-b-2 border-gray-100 pb-2">3. Report Submission &amp; Dispatch</h2>
+            <p>Once the form is filled out, use the action controls at the bottom of the report:</p>
 
             <ul>
               <li>
-                <strong>Generate Word Report (.docx):</strong> 
-                Compiles the form into a beautifully formatted ITG Daily Report document (.docx) directly on your device. All tables, metadata, and fonts are built client-side. No internet required.
-              </li>
-              <li>
-                <strong>Submit Report (Email Dispatcher):</strong> 
-                Opens a dispatch modal. It compiles the report into an formatted summary text ready to send. Recipient lists are persistently saved to your local device to save time.
+                <strong>Submit Report (1-Click Dispatch):</strong> 
+                Validates required fields (checking for recent duplicate submissions in the last 6 hours), asks for sheet confirmation, and opens the Submit Report dispatch window. Your base recipients are combined automatically with any emails on file for the selected contractor. Clicking <strong>⚡ 1-Click Dispatch</strong> downloads the formatted Word Report (<code>.docx</code>), opens your pre-filled email draft, and syncs the report to SharePoint (or queues it offline automatically if disconnected).
               </li>
               <li>
                 <strong>Print Report:</strong> 
@@ -432,7 +428,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               </li>
               <li>
                 <strong>Clear Form:</strong> 
-                Wipes all input values, deletes the local IndexedDB draft cache, and sets up a fresh, blank ledger. Use this at the start of a new shift.
+                Wipes all input values, deletes the local IndexedDB draft cache, and sets up a fresh, blank ledger with a new submission ID.
               </li>
             </ul>
 

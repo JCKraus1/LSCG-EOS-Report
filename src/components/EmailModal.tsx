@@ -11,6 +11,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { ShiftReportData } from '../types';
+import { getContractorEmails } from '../config';
+
+const DEFAULT_RECIPIENTS_KEY = 'lscg_default_email_recipients_v3';
+const BASE_DEFAULT_RECIPIENTS = 'Tillman.Construction@itgcomm.com, Tillman.Production@itgcomm.com';
 
 interface EmailModalProps {
   isOpen: boolean;
@@ -36,22 +40,44 @@ export const EmailModal: React.FC<EmailModalProps> = ({
   const [copiedBody, setCopiedBody] = useState(false);
   const [copiedTo, setCopiedTo] = useState(false);
 
+  const contractorEmails = getContractorEmails(data.contractor);
+
   useEffect(() => {
     if (isOpen) {
-      const saved = localStorage.getItem('lscg_default_email_recipients_v3');
-      if (saved) {
-        setRecipients(saved);
-      } else {
-        const defaultList = 'Tillman.Construction@itgcomm.com, Tillman.Production@itgcomm.com';
-        setRecipients(defaultList);
-        localStorage.setItem('lscg_default_email_recipients_v3', defaultList);
+      let saved = localStorage.getItem(DEFAULT_RECIPIENTS_KEY);
+      if (!saved) {
+        saved = BASE_DEFAULT_RECIPIENTS;
+        localStorage.setItem(DEFAULT_RECIPIENTS_KEY, saved);
       }
+
+      const baseList = saved
+        .split(',')
+        .map((e) => e.trim())
+        .filter(Boolean);
+
+      const seenLower = new Set(baseList.map((e) => e.toLowerCase()));
+      const merged = [...baseList];
+
+      for (const email of contractorEmails) {
+        if (!seenLower.has(email.toLowerCase())) {
+          seenLower.add(email.toLowerCase());
+          merged.push(email);
+        }
+      }
+
+      setRecipients(merged.join(', '));
     }
-  }, [isOpen]);
+  }, [isOpen, data.contractor]);
 
   const handleRecipientsChange = (val: string) => {
     setRecipients(val);
-    localStorage.setItem('lscg_default_email_recipients_v3', val);
+    // Save user's base default recipients without permanently baking in the auto-added contractor emails
+    const contractorSet = new Set(contractorEmails.map((e) => e.toLowerCase()));
+    const baseOnly = val
+      .split(',')
+      .map((e) => e.trim())
+      .filter((e) => e && !contractorSet.has(e.toLowerCase()));
+    localStorage.setItem(DEFAULT_RECIPIENTS_KEY, baseOnly.join(', '));
   };
 
   if (!isOpen) return null;
@@ -201,8 +227,16 @@ Submitted by: ${data.submittedBy || 'N/A'}`;
               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 transition"
             />
             <p className="text-[11px] text-gray-500 italic">
-              Separate multiple email addresses with commas. This list is saved locally in your browser forever.
+              Separate multiple email addresses with commas. Base recipients are saved locally in your browser; contractor emails are added automatically when a contractor is selected.
             </p>
+            {contractorEmails.length > 0 && (
+              <div className="mt-1.5 px-3 py-1.5 bg-[#e8f6fb] border border-[#b3dff0] rounded-lg text-[11px] font-medium text-[#1a6b8a] flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                <span>
+                  Added {contractorEmails.length} contractor email{contractorEmails.length > 1 ? 's' : ''} for <strong>{data.contractor}</strong>: {contractorEmails.join(', ')}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Step 2: Subject Line */}

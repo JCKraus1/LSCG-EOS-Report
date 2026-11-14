@@ -23,6 +23,7 @@ import { getLogoBase64 } from '../utils/logo';
 import { saveDraftToStorage, loadDraftFromStorage, clearDraftFromStorage } from '../utils/indexedDb';
 import { MARKETS, Market } from '../config';
 import { EmailModal } from './EmailModal';
+import { ContractorCombobox } from './ContractorCombobox';
 import {
   cleanProjectId,
   isValidProjectId,
@@ -708,8 +709,8 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       </div>
 
       {/* 1. General Information */}
-      <div className="max-w-[860px] mx-auto mb-4 bg-white rounded-2xl sm:rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden print:shadow-none print:border print:border-gray-300 print:mb-3">
-        <div className="bg-[#1e7aaa] px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+      <div className="max-w-[860px] mx-auto mb-4 bg-white rounded-2xl sm:rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] overflow-visible print:shadow-none print:border print:border-gray-300 print:mb-3">
+        <div className="bg-[#1e7aaa] rounded-t-2xl sm:rounded-t-xl px-4 sm:px-5 py-3 flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
             <FileText className="w-4 h-4 flex-shrink-0" />
             <div>
@@ -809,19 +810,13 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
               <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.contractor ? 'text-red-600' : 'text-[#6c757d]'}`}>
                 Contractor name <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                placeholder="Contractor / Foreman Name"
+              <ContractorCombobox
                 value={contractor}
-                onChange={(e) => {
-                  setContractor(e.target.value);
+                onChange={(val) => {
+                  setContractor(val);
                   if (validationErrors.contractor) setValidationErrors((prev) => ({ ...prev, contractor: false }));
                 }}
-                className={`w-full px-3 sm:px-2.5 py-2.5 sm:py-2 border rounded-xl sm:rounded-lg text-sm sm:text-[13px] transition ${
-                  validationErrors.contractor
-                    ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50 text-red-900 placeholder-red-400 font-medium'
-                    : 'border-[#dee2e6] bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20'
-                }`}
+                hasError={validationErrors.contractor}
               />
             </div>
 
