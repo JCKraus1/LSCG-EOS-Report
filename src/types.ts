@@ -28,6 +28,7 @@ export interface EosPayload {
   project: string;
   vendor: string;
   contractor: string;
+  inspector: string;
   submittedBy: string;
   startAddress: string;
   endAddress: string;
@@ -47,6 +48,7 @@ export interface ShiftReportData {
   projectId?: string;
   project: string;
   contractor: string;
+  inspector?: string;
   submittedBy: string;
   vendor: string;
   totalFootage: string;

@@ -205,7 +205,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <div class="doc-metadata">
               <div> Tillman Fiber Project </div>
               <div> Document Ref: ITG-EOD-01 </div>
-              <div> Version 2.5 • November 2026 </div>
+              <div> Version 2.6 • November 2026 </div>
             </div>
           </div>
           
@@ -329,6 +329,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               <li><strong>Contractor Name <code>*</code>:</strong> Select an approved contractor from the searchable dropdown list, or type a custom contractor name if not listed. Selecting a contractor from the list automatically adds their associated contact emails to your email recipients upon dispatch.</li>
               <li><strong>Vendor:</strong> Pre-configured as <code>ITG Communications</code>.</li>
               <li><strong>Submitted By <code>*</code>:</strong> Name of the supervisor or foreman drafting the report.</li>
+              <li><strong>Inspector on Site:</strong> Name of the inspector on site for the day (included in generated emails, Word reports, and SharePoint payload).</li>
               <li><strong>Total Drill Footage &amp; Addresses:</strong> Entered in the Construction/Fiber EOS section along with live-counted SOW items (<code>Toby Boxes</code>, <code>DAPs</code>, <code>Hand Holes</code>, and <code>FDH</code>) and optional Start/End addresses.</li>
             </ul>
 

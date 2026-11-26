@@ -124,7 +124,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({
   const addressSection = `Start Address: ${data.startAddress || '—'}\nEnd Address: ${data.endAddress || '—'}\n\n`;
 
   const body = `Please see the attached EOS/Redline Report for project # ${
-    data.project || 'N/A'
+    data.projectId || data.project || 'N/A'
   } by contractor ${data.contractor || 'N/A'}.
 
 ${activityHeader}
@@ -141,6 +141,7 @@ Revisions: ${data.revisions || 'None'}
 Issues/Damages: ${data.issues || 'None'}
 Next Day Plan: ${data.nextDay || 'None'}
 
+Inspector on Site: ${data.inspector?.trim() || 'N/A'}
 Submitted by: ${data.submittedBy || 'N/A'}`;
 
 

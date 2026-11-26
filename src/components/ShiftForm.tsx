@@ -94,6 +94,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
   const [projectId, setProjectId] = useState<string>('');
   const [projectIdError, setProjectIdError] = useState<boolean>(false);
   const [contractor, setContractor] = useState<string>('');
+  const [inspector, setInspector] = useState<string>('');
   const [submittedBy, setSubmittedBy] = useState<string>('');
   const [startAddress, setStartAddress] = useState<string>('');
   const [endAddress, setEndAddress] = useState<string>('');
@@ -172,6 +173,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
           draft.market ||
           draft.project ||
           draft.contractor ||
+          draft.inspector ||
           draft.submittedBy ||
           draft.drillFootage ||
           draft.totalFootage ||
@@ -182,8 +184,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         setSubmissionId(generateSubmissionId());
         setDate(draft.date || now.toISOString().split('T')[0]);
         setMarket((draft.market as Market) || '');
-        setProjectId(draft.projectId || draft.project || '');
+        setProjectId(draft.projectId || (draft.project && draft.project !== 'Tillman Fiber' ? draft.project : '') || '');
         setContractor(draft.contractor || '');
+        setInspector(draft.inspector || '');
         setSubmittedBy(draft.submittedBy || '');
         setDrillFootage(draft.drillFootage !== undefined ? String(draft.drillFootage) : (draft.totalFootage || '0'));
         setStartAddress(draft.startAddress || '');
@@ -230,6 +233,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
         projectId,
         project: projectId || '',
         contractor,
+        inspector,
         submittedBy,
         drillFootage,
         totalFootage: drillFootage,
@@ -248,7 +252,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [submissionId, date, market, projectId, contractor, submittedBy, drillFootage, startAddress, endAddress, activityType, revisions, issues, nextDay, signature, supervisor, activities, motItems]);
+  }, [submissionId, date, market, projectId, contractor, inspector, submittedBy, drillFootage, startAddress, endAddress, activityType, revisions, issues, nextDay, signature, supervisor, activities, motItems]);
 
   const handleAddActivity = () => {
     setActivities((prev) => [
@@ -350,6 +354,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     setProjectId('');
     setProjectIdError(false);
     setContractor('');
+    setInspector('');
     setSubmittedBy('');
     setDrillFootage('0');
     setStartAddress('');
@@ -383,8 +388,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
     date,
     market,
     projectId,
-    project: projectId || 'Tillman Fiber',
+    project: projectId || '',
     contractor,
+    inspector,
     submittedBy,
     vendor: 'ITG Communications',
     totalFootage: drillFootage,
@@ -489,6 +495,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
       project: '',
       vendor: 'ITG Communications',
       contractor: contractor.trim(),
+      inspector: inspector.trim(),
       submittedBy: submittedBy.trim(),
       startAddress: startAddress.trim(),
       endAddress: endAddress.trim(),
@@ -805,7 +812,7 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-3 mb-3.5 sm:mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-3 mb-3.5 sm:mb-3">
             <div className="flex flex-col gap-1">
               <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.contractor ? 'text-red-600' : 'text-[#6c757d]'}`}>
                 Contractor name <span className="text-red-500">*</span>
@@ -826,7 +833,9 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
                 ITG Communications
               </div>
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-3 mb-3.5 sm:mb-3">
             <div className="flex flex-col gap-1">
               <label className={`text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider ${validationErrors.submittedBy ? 'text-red-600' : 'text-[#6c757d]'}`}>
                 Submitted by <span className="text-red-500">*</span>
@@ -844,6 +853,19 @@ export const ShiftForm: React.FC<ShiftFormProps> = ({ onOpenHtmlModal, onOpenGui
                     ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50 text-red-900 placeholder-red-400 font-medium'
                     : 'border-[#dee2e6] bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20'
                 }`}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] sm:text-[10px] font-extrabold sm:font-bold uppercase tracking-wider text-[#6c757d]">
+                Inspector on site
+              </label>
+              <input
+                type="text"
+                placeholder="Inspector name for the day"
+                value={inspector}
+                onChange={(e) => setInspector(e.target.value)}
+                className="w-full px-3 sm:px-2.5 py-2.5 sm:py-2 border border-[#dee2e6] bg-[#f8f9fa] focus:bg-white focus:outline-none focus:border-[#29a9e1] focus:ring-2 focus:ring-[#29a9e1]/20 rounded-xl sm:rounded-lg text-sm sm:text-[13px] transition"
               />
             </div>
           </div>

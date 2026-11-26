@@ -326,23 +326,61 @@ export async function generateDocxBlob(d: ShiftReportData, customFilename?: stri
               new TableRow({
                 children: [
                   dc(dateDisplay, 2000),
-                  dc(d.project || '—', 2360),
+                  dc(d.projectId || d.project || '—', 2360),
                   dc(d.contractor || '—', 2360),
                   dc(d.submittedBy || '—', 2360)
                 ]
               }),
-              new TableRow({ children: [hc('Vendor', 9080)] }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    borders: hbdrs,
+                    width: { size: 4360, type: WidthType.DXA },
+                    columnSpan: 2,
+                    margins: CM,
+                    shading: { fill: BLUE, type: ShadingType.CLEAR },
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'Vendor', bold: true, size: 18, color: WHITE })]
+                      })
+                    ]
+                  }),
+                  new TableCell({
+                    borders: hbdrs,
+                    width: { size: 4720, type: WidthType.DXA },
+                    columnSpan: 2,
+                    margins: CM,
+                    shading: { fill: BLUE, type: ShadingType.CLEAR },
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'Inspector on Site', bold: true, size: 18, color: WHITE })]
+                      })
+                    ]
+                  })
+                ]
+              }),
               new TableRow({
                 children: [
                   new TableCell({
                     borders: bdrs,
-                    width: { size: 9080, type: WidthType.DXA },
-                    columnSpan: 4,
+                    width: { size: 4360, type: WidthType.DXA },
+                    columnSpan: 2,
                     margins: CM,
                     shading: { fill: LBLUE, type: ShadingType.CLEAR },
                     children: [
                       new Paragraph({
                         children: [new TextRun({ text: d.vendor, bold: true, size: 20, color: BLUE })]
+                      })
+                    ]
+                  }),
+                  new TableCell({
+                    borders: bdrs,
+                    width: { size: 4720, type: WidthType.DXA },
+                    columnSpan: 2,
+                    margins: CM,
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: d.inspector?.trim() || '—', size: 18, color: BLACK })]
                       })
                     ]
                   })

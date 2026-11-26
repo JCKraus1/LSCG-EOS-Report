@@ -3,7 +3,7 @@
  * all field users are running the latest version of the EOS web app.
  */
 
-export const CURRENT_APP_VERSION = '2.5.0';
+export const CURRENT_APP_VERSION = '2.6.0';
 export const SESSION_START_KEY = 'eos_session_started_at';
 export const SIX_HOURS_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
